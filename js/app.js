@@ -553,3 +553,10 @@ ligarAcoes();
 preencherTemporada();
 preencherDia();
 $("painelTemporada").open = dados.temporada.meta === null && datasSalvas(dados).length === 0;
+
+// App instalável e sem internet (só funciona em http/https, não ao abrir o arquivo direto).
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("sw.js").catch(() => { /* segue funcionando sem cache */ });
+}
+// Pede ao navegador para não apagar os dados quando faltar espaço.
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});

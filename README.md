@@ -41,3 +41,7 @@ caixa-na-mao/
 ## Testes
 
 Abra `testes/testes.html` no navegador. A página mostra cada teste e se passou.
+
+---
+
+**Marcus Deleon™ – Tecnologia de Ponta**

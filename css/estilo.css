@@ -588,10 +588,21 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
 }
 
 .rodape {
-  margin: 12px 0 24px;
+  margin: 12px 0 0;
   font-size: 12px;
   color: var(--texto-suave);
 }
+
+.assinatura {
+  margin: 20px 0 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: .3px;
+  color: var(--texto-suave);
+}
+.assinatura strong { color: var(--petroleo-700); }
 
 /* ---------------------------------------------------------------- Telas maiores */
 
@@ -686,4 +697,6 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
   .campo label { font-size: 10px; }
 
   .descricao::placeholder, textarea::placeholder, .campo-valor input::placeholder { color: transparent; }
+
+  .assinatura { margin: 10px 0 0; padding-top: 6px; font-size: 9px; }
 }
