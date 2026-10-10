@@ -98,6 +98,38 @@
       </div>
 
       <div class="coluna">
+        <!-- Saldo anterior -->
+        <section class="cartao" aria-labelledby="tituloAnterior">
+          <header class="cartao-cabecalho">
+            <h2 id="tituloAnterior">Saldo anterior</h2>
+            <p id="origemAnterior">Dinheiro que ficou do dia anterior</p>
+          </header>
+          <div class="campo-duplo saldo-anterior">
+            <div class="campo">
+              <label for="anteriorGaveta">Na gaveta</label>
+              <div class="campo-valor">
+                <span>R$</span>
+                <input id="anteriorGaveta" data-campo="anterior.gaveta" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+                <button type="button" class="limpar-campo" aria-label="Limpar saldo anterior na gaveta" title="Limpar">✕</button>
+              </div>
+              <p class="erro-campo" hidden></p>
+            </div>
+            <div class="campo">
+              <label for="anteriorBanco">No banco</label>
+              <div class="campo-valor">
+                <span>R$</span>
+                <input id="anteriorBanco" data-campo="anterior.banco" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+                <button type="button" class="limpar-campo" aria-label="Limpar saldo anterior no banco" title="Limpar">✕</button>
+              </div>
+              <p class="erro-campo" hidden></p>
+            </div>
+          </div>
+          <div class="anterior-manual" id="avisoAnteriorManual" hidden>
+            <span>Saldo anterior ajustado à mão.</span>
+            <button type="button" class="botao-texto" id="usarAnteriorAutomatico">Voltar ao automático</button>
+          </div>
+        </section>
+
         <!-- Conferência da gaveta -->
         <section class="cartao" aria-labelledby="tituloConferencia">
           <header class="cartao-cabecalho">
@@ -107,7 +139,7 @@
 
           <dl class="extrato">
             <div>
-              <dt>Saldo anterior na gaveta <small id="origemAnterior"></small></dt>
+              <dt>Saldo anterior na gaveta</dt>
               <dd id="confAnterior">R$ 0,00</dd>
             </div>
             <div>
@@ -129,38 +161,12 @@
             <div class="campo-valor grande">
               <span>R$</span>
               <input id="contado" data-campo="contado" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-              <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+              <button type="button" class="limpar-campo" aria-label="Limpar valor" title="Limpar">✕</button>
             </div>
             <p class="erro-campo" hidden></p>
           </div>
 
           <div class="conferencia" id="conferencia" data-estado="nao-conferido">Conte a gaveta para conferir.</div>
-
-          <details class="ajuste-anterior" id="ajusteAnterior">
-            <summary>Ajustar o saldo anterior à mão</summary>
-            <p class="dica">Use só se o saldo que veio do dia anterior estiver errado (ex.: primeiro uso do app).</p>
-            <div class="campo-duplo">
-              <div class="campo">
-                <label for="anteriorGaveta">Na gaveta</label>
-                <div class="campo-valor">
-                  <span>R$</span>
-                  <input id="anteriorGaveta" data-campo="anterior.gaveta" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-                  <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
-                </div>
-                <p class="erro-campo" hidden></p>
-              </div>
-              <div class="campo">
-                <label for="anteriorBanco">No banco</label>
-                <div class="campo-valor">
-                  <span>R$</span>
-                  <input id="anteriorBanco" data-campo="anterior.banco" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-                  <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
-                </div>
-                <p class="erro-campo" hidden></p>
-              </div>
-            </div>
-            <button type="button" class="botao-texto" id="usarAnteriorAutomatico">Voltar ao saldo automático</button>
-          </details>
         </section>
 
         <!-- Anotações -->
@@ -169,7 +175,10 @@
             <h2 id="tituloAnotacoes">Anotações</h2>
             <p>O que aconteceu hoje que vale lembrar?</p>
           </header>
-          <textarea id="anotacoes" rows="4" maxlength="2000" placeholder="Ex.: dia de chuva, faltou gelo às 14h…"></textarea>
+          <div class="anotacoes">
+            <textarea id="anotacoes" rows="4" maxlength="2000" placeholder="Ex.: dia de chuva, faltou gelo às 14h…"></textarea>
+            <button type="button" class="limpar-texto" data-limpa="anotacoes" aria-label="Limpar anotações" title="Limpar">✕</button>
+          </div>
         </section>
 
         <!-- Temporada -->
@@ -185,7 +194,7 @@
                 <div class="campo-valor">
                   <span>R$</span>
                   <input id="metaTemporada" data-campo="temporada.meta" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-                  <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+                  <button type="button" class="limpar-campo" aria-label="Limpar valor" title="Limpar">✕</button>
                 </div>
                 <p class="erro-campo" hidden></p>
               </div>
@@ -209,7 +218,7 @@
                   <div class="campo-valor">
                     <span>R$</span>
                     <input id="inicialGaveta" data-campo="temporada.saldoInicial.gaveta" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-                    <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+                    <button type="button" class="limpar-campo" aria-label="Limpar valor" title="Limpar">✕</button>
                   </div>
                   <p class="erro-campo" hidden></p>
                 </div>
@@ -218,7 +227,7 @@
                   <div class="campo-valor">
                     <span>R$</span>
                     <input id="inicialBanco" data-campo="temporada.saldoInicial.banco" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-                    <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+                    <button type="button" class="limpar-campo" aria-label="Limpar valor" title="Limpar">✕</button>
                   </div>
                   <p class="erro-campo" hidden></p>
                 </div>

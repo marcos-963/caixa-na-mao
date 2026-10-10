@@ -69,7 +69,7 @@ function htmlCampoValor(id, campo) {
     <div class="campo-valor">
       <span>R$</span>
       <input id="${id}" data-campo="${campo}" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-      <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+      <button type="button" class="limpar-campo" aria-label="Limpar valor" title="Limpar">✕</button>
     </div>
     <p class="erro-campo" hidden></p>`;
 }
@@ -91,7 +91,10 @@ function montarLinhas() {
       </div>
       ${htmlCampoValor(`ent-${e.tipo}`, `entrada.${e.tipo}`)}
       <div class="linha-extra">
-        <input class="descricao" data-desc="entrada.${e.tipo}" maxlength="200" placeholder="Observação (opcional)" aria-label="Observação: ${e.rotulo}" />
+        <span class="texto-com-limpar">
+          <input class="descricao" data-desc="entrada.${e.tipo}" maxlength="200" placeholder="Observação (opcional)" aria-label="Observação: ${e.rotulo}" />
+          <button type="button" class="limpar-texto" aria-label="Limpar observação" title="Limpar">✕</button>
+        </span>
         ${e.escolheLugar ? htmlAlternador("outrasEntradasEm", "Onde entrou") : ""}
       </div>
     </div>`).join("");
@@ -104,7 +107,10 @@ function montarLinhas() {
       </div>
       ${htmlCampoValor(`sai-${s.tipo}`, `saida.${s.tipo}`)}
       <div class="linha-extra">
-        <input class="descricao" data-desc="saida.${s.tipo}" maxlength="200" placeholder="Observação (opcional)" aria-label="Observação: ${s.rotulo}" />
+        <span class="texto-com-limpar">
+          <input class="descricao" data-desc="saida.${s.tipo}" maxlength="200" placeholder="Observação (opcional)" aria-label="Observação: ${s.rotulo}" />
+          <button type="button" class="limpar-texto" aria-label="Limpar observação" title="Limpar">✕</button>
+        </span>
         ${htmlAlternador(`pago-${s.tipo}`, `Pago com (${s.rotulo})`)}
       </div>
     </div>`).join("");
@@ -202,7 +208,7 @@ function marcarValidade(input) {
     erro.hidden = valido;
     erro.textContent = valido ? "" : MSG_INVALIDO;
   }
-  limpar.hidden = input.value === "";
+  limpar.disabled = input.value === "";
   return valor;
 }
 
@@ -220,7 +226,8 @@ function aoDigitarValor(input, ev) {
   let valor = mascara.centavos;
   // Apagando até zerar ("0,01" → "0,00"), o campo fica vazio.
   if (valor === 0 && ev && ev.inputType && ev.inputType.startsWith("delete")) valor = null;
-  input.value = valor === null ? "" : mascara.texto;
+  const ehAnterior = input.dataset.campo.startsWith("anterior.");
+  input.value = valor === null ? (ehAnterior ? "0,00" : "") : mascara.texto;
   if (document.activeElement === input) input.setSelectionRange(input.value.length, input.value.length);
   marcarValidade(input);
   aplicarCampo(input.dataset.campo, valor);
@@ -261,6 +268,14 @@ function ligarCamposDeValor() {
   });
 
   document.addEventListener("click", (ev) => {
+    const botaoTexto = ev.target.closest(".limpar-texto");
+    if (botaoTexto) {
+      const campo = botaoTexto.parentElement.querySelector("input, textarea");
+      campo.value = "";
+      campo.dispatchEvent(new Event("input", { bubbles: true }));
+      campo.focus();
+      return;
+    }
     const botao = ev.target.closest(".limpar-campo");
     if (!botao) return;
     const input = botao.closest(".campo-valor").querySelector("input");
@@ -309,9 +324,7 @@ function ligarOutrosCampos() {
 
   $("usarAnteriorAutomatico").addEventListener("click", () => {
     alterarDia((dia) => { dia.anteriorManual = null; });
-    mostrarValor($("anteriorGaveta"), null);
-    mostrarValor($("anteriorBanco"), null);
-    $("ajusteAnterior").open = false;
+    preencherAnterior();
     atualizarTela();
   });
 }
@@ -395,11 +408,16 @@ function preencherDia() {
   $("anotacoes").value = dia.anotacoes;
 
   mostrarValor($("contado"), dia.contado);
-  mostrarValor($("anteriorGaveta"), dia.anteriorManual ? dia.anteriorManual.gaveta : null);
-  mostrarValor($("anteriorBanco"), dia.anteriorManual ? dia.anteriorManual.banco : null);
-  $("ajusteAnterior").open = !!dia.anteriorManual;
+  preencherAnterior();
 
   atualizarTela();
+}
+
+/** Mostra o saldo anterior em vigor (automático ou ajustado à mão). */
+function preencherAnterior() {
+  const { anterior } = saldoAnteriorDe(dados, dataAtual);
+  mostrarValor($("anteriorGaveta"), anterior.gaveta);
+  mostrarValor($("anteriorBanco"), anterior.banco);
 }
 
 function preencherTemporada() {
@@ -438,9 +456,10 @@ function atualizarTela() {
   $("confSaiu").textContent = moeda(r.saiuDaGaveta);
   $("confEsperado").textContent = moeda(r.gavetaEsperada);
   $("origemAnterior").textContent =
-    origemAnterior === "manual" ? "(ajustado à mão)"
-    : origemAnterior === "inicio-temporada" ? "(início da temporada)"
-    : `(veio de ${dataCurta(origemAnterior)})`;
+    origemAnterior === "manual" ? "Ajustado à mão"
+    : origemAnterior === "inicio-temporada" ? "Veio do início da temporada"
+    : `Veio do dia ${dataCurta(origemAnterior)}`;
+  $("avisoAnteriorManual").hidden = origemAnterior !== "manual";
 
   const conf = $("conferencia");
   conf.dataset.estado = r.conferencia;
@@ -450,13 +469,6 @@ function atualizarTela() {
     sobrou: `Sobrou ${moeda(r.diferenca)} na gaveta. Confira se faltou anotar alguma entrada.`,
     faltou: `Faltou ${moeda(-r.diferenca)} na gaveta. Confira se faltou anotar alguma saída.`,
   }[r.conferencia];
-
-  // Placeholders do ajuste mostram o saldo automático
-  if (origemAnterior !== "manual") {
-    const auto = saldoAnteriorDe(dados, dataAtual).anterior;
-    $("anteriorGaveta").placeholder = formatarCentavos(auto.gaveta);
-    $("anteriorBanco").placeholder = formatarCentavos(auto.banco);
-  }
 
   atualizarMeta(r);
 }
