@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f4c5c" />
+  <title>Caixa na Mão</title>
+  <link rel="stylesheet" href="css/estilo.css" />
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div class="marca">
+        <span class="marca-simbolo" aria-hidden="true">R$</span>
+        <div>
+          <h1>Caixa na Mão</h1>
+          <p>Controle de caixa diário</p>
+        </div>
+      </div>
+
+      <nav class="navegacao-data" aria-label="Escolher o dia">
+        <button type="button" class="botao-icone" id="diaAnterior" aria-label="Dia anterior">‹</button>
+        <label class="seletor-data">
+          <span class="dia-semana" id="diaSemana"></span>
+          <input type="date" id="data" aria-label="Data" />
+        </label>
+        <button type="button" class="botao-icone" id="diaSeguinte" aria-label="Dia seguinte">›</button>
+        <button type="button" class="botao-texto" id="irParaHoje">Hoje</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="pagina">
+    <p class="aviso-armazenamento" id="avisoArmazenamento" role="alert" hidden>
+      Não foi possível salvar neste navegador (aba anônima ou sem espaço). Exporte um backup antes de fechar.
+    </p>
+
+    <!-- Resumo do dia -->
+    <section class="resumo" aria-label="Resumo do dia">
+      <div class="indicador destaque">
+        <span class="indicador-rotulo">Resultado do dia</span>
+        <strong class="indicador-valor" id="resResultado">R$ 0,00</strong>
+        <span class="indicador-nota">Entradas − saídas de hoje</span>
+      </div>
+      <div class="indicador">
+        <span class="indicador-rotulo">Na gaveta</span>
+        <strong class="indicador-valor" id="resGaveta">R$ 0,00</strong>
+        <span class="indicador-nota">Dinheiro em espécie</span>
+      </div>
+      <div class="indicador">
+        <span class="indicador-rotulo">No banco</span>
+        <strong class="indicador-valor" id="resBanco">R$ 0,00</strong>
+        <span class="indicador-nota">Pix e cartões</span>
+      </div>
+      <div class="indicador">
+        <span class="indicador-rotulo">Saldo total</span>
+        <strong class="indicador-valor" id="resTotal">R$ 0,00</strong>
+        <span class="indicador-nota">Gaveta + banco</span>
+      </div>
+      <div class="meta-dia" id="metaDia" hidden>
+        <div class="meta-cabecalho">
+          <span>Meta do dia: <strong id="metaValor"></strong></span>
+          <span id="metaPercentual"></span>
+        </div>
+        <div class="meta-barra" role="progressbar" aria-label="Progresso da meta do dia" aria-valuemin="0" aria-valuemax="100">
+          <div class="meta-preenchida" id="metaBarra"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="colunas">
+      <div class="coluna">
+        <!-- Entradas -->
+        <section class="cartao" aria-labelledby="tituloEntradas">
+          <header class="cartao-cabecalho">
+            <h2 id="tituloEntradas">Entradas</h2>
+            <p>Tudo o que entrou hoje</p>
+          </header>
+          <div class="linhas" id="linhasEntradas"></div>
+          <footer class="cartao-total">
+            <span>Total de entradas</span>
+            <strong id="totalEntradas">R$ 0,00</strong>
+          </footer>
+        </section>
+
+        <!-- Saídas -->
+        <section class="cartao" aria-labelledby="tituloSaidas">
+          <header class="cartao-cabecalho">
+            <h2 id="tituloSaidas">Saídas</h2>
+            <p>Tudo o que saiu hoje e de onde saiu</p>
+          </header>
+          <div class="linhas" id="linhasSaidas"></div>
+          <footer class="cartao-total">
+            <span>Total de saídas</span>
+            <strong id="totalSaidas">R$ 0,00</strong>
+          </footer>
+        </section>
+      </div>
+
+      <div class="coluna">
+        <!-- Conferência da gaveta -->
+        <section class="cartao" aria-labelledby="tituloConferencia">
+          <header class="cartao-cabecalho">
+            <h2 id="tituloConferencia">Conferência da gaveta</h2>
+            <p>Conte o dinheiro em espécie no fim do dia</p>
+          </header>
+
+          <dl class="extrato">
+            <div>
+              <dt>Saldo anterior na gaveta <small id="origemAnterior"></small></dt>
+              <dd id="confAnterior">R$ 0,00</dd>
+            </div>
+            <div>
+              <dt>+ Entrou em dinheiro</dt>
+              <dd id="confEntrou">R$ 0,00</dd>
+            </div>
+            <div>
+              <dt>− Saiu da gaveta</dt>
+              <dd id="confSaiu">R$ 0,00</dd>
+            </div>
+            <div class="extrato-total">
+              <dt>Deveria ter na gaveta</dt>
+              <dd id="confEsperado">R$ 0,00</dd>
+            </div>
+          </dl>
+
+          <div class="campo">
+            <label for="contado">Quanto tem de verdade na gaveta?</label>
+            <div class="campo-valor grande">
+              <span>R$</span>
+              <input id="contado" data-campo="contado" inputmode="decimal" autocomplete="off" placeholder="0,00" />
+              <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+            </div>
+            <p class="erro-campo" hidden></p>
+          </div>
+
+          <div class="conferencia" id="conferencia" data-estado="nao-conferido">Conte a gaveta para conferir.</div>
+
+          <details class="ajuste-anterior" id="ajusteAnterior">
+            <summary>Ajustar o saldo anterior à mão</summary>
+            <p class="dica">Use só se o saldo que veio do dia anterior estiver errado (ex.: primeiro uso do app).</p>
+            <div class="campo-duplo">
+              <div class="campo">
+                <label for="anteriorGaveta">Na gaveta</label>
+                <div class="campo-valor">
+                  <span>R$</span>
+                  <input id="anteriorGaveta" data-campo="anterior.gaveta" inputmode="decimal" autocomplete="off" placeholder="0,00" />
+                  <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+                </div>
+                <p class="erro-campo" hidden></p>
+              </div>
+              <div class="campo">
+                <label for="anteriorBanco">No banco</label>
+                <div class="campo-valor">
+                  <span>R$</span>
+                  <input id="anteriorBanco" data-campo="anterior.banco" inputmode="decimal" autocomplete="off" placeholder="0,00" />
+                  <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+                </div>
+                <p class="erro-campo" hidden></p>
+              </div>
+            </div>
+            <button type="button" class="botao-texto" id="usarAnteriorAutomatico">Voltar ao saldo automático</button>
+          </details>
+        </section>
+
+        <!-- Anotações -->
+        <section class="cartao" aria-labelledby="tituloAnotacoes">
+          <header class="cartao-cabecalho">
+            <h2 id="tituloAnotacoes">Anotações</h2>
+            <p>O que aconteceu hoje que vale lembrar?</p>
+          </header>
+          <textarea id="anotacoes" rows="4" maxlength="2000" placeholder="Ex.: dia de chuva, faltou gelo às 14h…"></textarea>
+        </section>
+
+        <!-- Temporada -->
+        <section class="cartao" aria-labelledby="tituloTemporada">
+          <details id="painelTemporada">
+            <summary class="cartao-cabecalho">
+              <h2 id="tituloTemporada">Temporada e meta</h2>
+              <p id="resumoTemporada">Defina a meta e as datas da temporada</p>
+            </summary>
+            <div class="temporada">
+              <div class="campo">
+                <label for="metaTemporada">Quero terminar a temporada com</label>
+                <div class="campo-valor">
+                  <span>R$</span>
+                  <input id="metaTemporada" data-campo="temporada.meta" inputmode="decimal" autocomplete="off" placeholder="0,00" />
+                  <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+                </div>
+                <p class="erro-campo" hidden></p>
+              </div>
+              <div class="campo-duplo">
+                <div class="campo">
+                  <label for="inicioTemporada">Início</label>
+                  <input type="date" id="inicioTemporada" class="entrada-data" />
+                </div>
+                <div class="campo">
+                  <label for="fimTemporada">Fim</label>
+                  <input type="date" id="fimTemporada" class="entrada-data" />
+                </div>
+              </div>
+              <fieldset class="folgas">
+                <legend>Dias de folga</legend>
+                <div id="listaFolgas"></div>
+              </fieldset>
+              <div class="campo-duplo">
+                <div class="campo">
+                  <label for="inicialGaveta">Comecei com (gaveta)</label>
+                  <div class="campo-valor">
+                    <span>R$</span>
+                    <input id="inicialGaveta" data-campo="temporada.saldoInicial.gaveta" inputmode="decimal" autocomplete="off" placeholder="0,00" />
+                    <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+                  </div>
+                  <p class="erro-campo" hidden></p>
+                </div>
+                <div class="campo">
+                  <label for="inicialBanco">Comecei com (banco)</label>
+                  <div class="campo-valor">
+                    <span>R$</span>
+                    <input id="inicialBanco" data-campo="temporada.saldoInicial.banco" inputmode="decimal" autocomplete="off" placeholder="0,00" />
+                    <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+                  </div>
+                  <p class="erro-campo" hidden></p>
+                </div>
+              </div>
+              <p class="calculo-meta" id="calculoMeta"></p>
+            </div>
+          </details>
+        </section>
+      </div>
+    </div>
+
+    <!-- Ações -->
+    <section class="acoes" aria-label="Ações">
+      <button type="button" class="botao primario" id="imprimir">Imprimir / PDF</button>
+      <button type="button" class="botao" id="exportar">Exportar backup</button>
+      <button type="button" class="botao" id="importar">Importar backup</button>
+      <input type="file" id="arquivoBackup" accept=".json,application/json" hidden />
+      <button type="button" class="botao perigo" id="limparDia">Limpar este dia</button>
+    </section>
+    <p class="rodape">
+      <span id="estadoSalvo">Tudo é salvo automaticamente neste navegador.</span>
+      Faça um backup de vez em quando.
+    </p>
+  </main>
+
+  <script src="js/dinheiro.js"></script>
+  <script src="js/calculos.js"></script>
+  <script src="js/armazenamento.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

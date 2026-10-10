@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Caixa na Mão — Testes</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; background: #f6f8fa; color: #12324d; }
+    h1 { font-size: 20px; }
+    #resumo { font-weight: 800; padding: 8px 12px; border-radius: 6px; display: inline-block; }
+    .ok-geral { background: #d8f5e0; color: #155c2b; }
+    .falha-geral { background: #ffe3e3; color: #8a1010; }
+    table { border-collapse: collapse; margin-top: 16px; background: #fff; }
+    td, th { border: 1px solid #cfe3ee; padding: 4px 10px; text-align: left; font-family: ui-monospace, monospace; font-size: 13px; }
+    .ok { color: #155c2b; }
+    .falha { color: #8a1010; font-weight: 800; }
+  </style>
+</head>
+<body>
+  <h1>Caixa na Mão — Testes</h1>
+  <div id="resumo"></div>
+  <table>
+    <thead><tr><th></th><th>Teste</th><th>Esperado</th><th>Obtido</th></tr></thead>
+    <tbody id="resultados"></tbody>
+  </table>
+
+  <script src="../js/dinheiro.js"></script>
+  <script src="../js/calculos.js"></script>
+  <script src="../js/armazenamento.js"></script>
+  <script>
+    const resultados = [];
+    const testar = (nome, obtido, esperado) => {
+      resultados.push({ nome, obtido, esperado, ok: Object.is(obtido, esperado) });
+    };
+
+    // ---- lerCentavos: formatos aceitos ----
+    testar('lerCentavos("12,50")', lerCentavos("12,50"), 1250);
+    testar('lerCentavos("12.50")  ← erro do original: virava 1.250,00', lerCentavos("12.50"), 1250);
+    testar('lerCentavos("0.99")   ← erro do original: virava 99,00', lerCentavos("0.99"), 99);
+    testar('lerCentavos("1000.5")', lerCentavos("1000.5"), 100050);
+    testar('lerCentavos("3,5")', lerCentavos("3,5"), 350);
+    testar('lerCentavos("12,")', lerCentavos("12,"), 1200);
+    testar('lerCentavos("1.000,50")', lerCentavos("1.000,50"), 100050);
+    testar('lerCentavos("1,000.50")', lerCentavos("1,000.50"), 100050);
+    testar('lerCentavos("1.000")', lerCentavos("1.000"), 100000);
+    testar('lerCentavos("12.345.678,90")', lerCentavos("12.345.678,90"), 1234567890);
+    testar('lerCentavos("1 000")', lerCentavos("1 000"), 100000);
+    testar('lerCentavos("R$ 10")', lerCentavos("R$ 10"), 1000);
+    testar('lerCentavos("")', lerCentavos(""), 0);
+    testar('lerCentavos("   ")', lerCentavos("   "), 0);
+
+    // ---- lerCentavos: formatos recusados (null = mostra aviso na tela) ----
+    testar('lerCentavos("-50")', lerCentavos("-50"), null);
+    testar('lerCentavos("50-")', lerCentavos("50-"), null);
+    testar('lerCentavos("1,2,3")', lerCentavos("1,2,3"), null);
+    testar('lerCentavos("12,345") ← ambíguo', lerCentavos("12,345"), null);
+    testar('lerCentavos("10.00.0")', lerCentavos("10.00.0"), null);
+    testar('lerCentavos("abc")', lerCentavos("abc"), null);
+    testar('lerCentavos("5,7a")', lerCentavos("5,7a"), null);
+    testar('lerCentavos(",50")', lerCentavos(",50"), null);
+
+    // ---- Sem erro de ponto flutuante ----
+    testar('0,10 + 0,20 = 0,30', lerCentavos("0,10") + lerCentavos("0,20"), lerCentavos("0,30"));
+
+    // ---- formatarCentavos ----
+    testar('formatarCentavos(0)', formatarCentavos(0), "0,00");
+    testar('formatarCentavos(5)', formatarCentavos(5), "0,05");
+    testar('formatarCentavos(1250)', formatarCentavos(1250), "12,50");
+    testar('formatarCentavos(143000)', formatarCentavos(143000), "1.430,00");
+    testar('formatarCentavos(123456789)', formatarCentavos(123456789), "1.234.567,89");
+    testar('formatarCentavos(-37000)', formatarCentavos(-37000), "-370,00");
+
+    // ---- calcularDia: o exemplo da tela do original, tudo em dinheiro ----
+    const exemplo = calcularDia({
+      anterior: { gaveta: 100000, banco: 0 },
+      entradas: { dinheiro: 80000 },
+      saidas: { materiais: { valor: 37000, pagoCom: "gaveta" } },
+    });
+    testar('exemplo: total de entradas', exemplo.totalEntradas, 80000);
+    testar('exemplo: total de saídas', exemplo.totalSaidas, 37000);
+    testar('exemplo: resultado do dia (800 − 370)', exemplo.resultadoDia, 43000);
+    testar('exemplo: gaveta esperada (1.000 + 800 − 370)', exemplo.gavetaEsperada, 143000);
+    testar('exemplo: saldo acumulado ← erro do original: dava 2.430,00', exemplo.saldoAcumulado, 143000);
+    testar('exemplo: sem contagem → "nao-conferido"', exemplo.conferencia, "nao-conferido");
+
+    // ---- calcularDia: Pix e cartão não entram na gaveta ----
+    const misto = calcularDia({
+      anterior: { gaveta: 20000, banco: 50000 },
+      entradas: { dinheiro: 30000, pix: 15000, debito: 10000, credito: 5000, outras: 2000 },
+      outrasEntradasEm: "banco",
+      saidas: {
+        materiais: { valor: 8000, pagoCom: "gaveta" },
+        taxas: { valor: 500, pagoCom: "banco" },
+      },
+      contado: 42000,
+    });
+    testar('misto: entrou na gaveta (só dinheiro)', misto.entrouNaGaveta, 30000);
+    testar('misto: entrou no banco (pix + débito + crédito + outras)', misto.entrouNoBanco, 32000);
+    testar('misto: gaveta esperada (200 + 300 − 80)', misto.gavetaEsperada, 42000);
+    testar('misto: banco esperado (500 + 320 − 5)', misto.bancoEsperado, 81500);
+    testar('misto: contou 420 → bateu', misto.conferencia, "bateu");
+    testar('misto: saldo acumulado (420 + 815)', misto.saldoAcumulado, 123500);
+
+    // ---- calcularDia: sobra e falta na gaveta ----
+    const faltou = calcularDia({ anterior: { gaveta: 10000 }, entradas: { dinheiro: 5000 }, contado: 14000 });
+    testar('faltou: diferença (140 − 150)', faltou.diferenca, -1000);
+    testar('faltou: conferência', faltou.conferencia, "faltou");
+    testar('faltou: amanhã começa com o que foi contado', faltou.saldoFinal.gaveta, 14000);
+    const sobrou = calcularDia({ anterior: { gaveta: 10000 }, contado: 10250 });
+    testar('sobrou: conferência', sobrou.conferencia, "sobrou");
+    testar('sobrou: diferença', sobrou.diferenca, 250);
+    testar('contado 0 conta como conferido', calcularDia({ anterior: { gaveta: 500 }, contado: 0 }).conferencia, "faltou");
+
+    // ---- calcularDia: dia vazio ----
+    const vazio = calcularDia({});
+    testar('dia vazio: saldo acumulado', vazio.saldoAcumulado, 0);
+    testar('outras entradas vão para a gaveta por padrão', calcularDia({ entradas: { outras: 700 } }).entrouNaGaveta, 700);
+
+    // ---- Meta diária ----
+    testar('meta: R$ 9.000 em 90 dias', calcularMetaDiaria(900000, 90), 10000);
+    testar('meta: R$ 1.000 em 3 dias arredonda para cima', calcularMetaDiaria(100000, 3), 33334);
+    testar('meta: sem dias → null', calcularMetaDiaria(100000, 0), null);
+    testar('meta: sem meta → null', calcularMetaDiaria(null, 30), null);
+    testar('dias: 01/12/2026 a 31/12/2026', contarDiasDeTrabalho("2026-12-01", "2026-12-31"), 31);
+    testar('dias: dezembro sem segundas', contarDiasDeTrabalho("2026-12-01", "2026-12-31", [1]), 27);
+    testar('dias: fim antes do início', contarDiasDeTrabalho("2026-12-31", "2026-12-01"), 0);
+
+    // ---- Armazenamento: saldo passa de um dia para o outro ----
+    const dados = dadosVazios();
+    dados.temporada.saldoInicial = { gaveta: 100000, banco: 0 };
+    gravarDia(dados, "2026-12-01", { entradas: { dinheiro: 80000 }, saidas: { materiais: { valor: 37000, pagoCom: "gaveta" } } });
+    gravarDia(dados, "2026-12-02", { entradas: { dinheiro: 10000, pix: 20000 }, contado: 150000 });
+    gravarDia(dados, "2026-12-05", { entradas: { dinheiro: 5000 } });
+    const temp = calcularTemporada(dados);
+    testar('dia 01: começa com o saldo inicial da temporada', temp["2026-12-01"].anterior.gaveta, 100000);
+    testar('dia 01: saldo acumulado', temp["2026-12-01"].resultado.saldoAcumulado, 143000);
+    testar('dia 02: anterior vem do dia 01', temp["2026-12-02"].anterior.gaveta, 143000);
+    testar('dia 02: origem do anterior', temp["2026-12-02"].origemAnterior, "2026-12-01");
+    testar('dia 02: gaveta esperada (1.430 + 100)', temp["2026-12-02"].resultado.gavetaEsperada, 153000);
+    testar('dia 02: contou 1.500 → faltou', temp["2026-12-02"].resultado.conferencia, "faltou");
+    testar('dia 05: pula dias sem registro e usa o contado do dia 02', temp["2026-12-05"].anterior.gaveta, 150000);
+    testar('dia 05: banco veio do Pix do dia 02', temp["2026-12-05"].anterior.banco, 20000);
+    testar('dia 03 (não salvo): anterior vem do dia 02', saldoAnteriorDe(dados, "2026-12-03").origem, "2026-12-02");
+    testar('dia 30/11 (antes de tudo): usa o saldo inicial', saldoAnteriorDe(dados, "2026-11-30").origem, "inicio-temporada");
+
+    // Corrigir um dia antigo corrige os seguintes
+    gravarDia(dados, "2026-12-01", { entradas: { dinheiro: 90000 }, saidas: { materiais: { valor: 37000, pagoCom: "gaveta" } } });
+    testar('corrigir dia 01 muda o anterior do dia 02', calcularData(dados, "2026-12-02").anterior.gaveta, 153000);
+
+    // Saldo anterior digitado à mão
+    gravarDia(dados, "2026-12-05", { entradas: { dinheiro: 5000 }, anteriorManual: { gaveta: 20000, banco: 0 } });
+    testar('anterior manual é respeitado', calcularData(dados, "2026-12-05").anterior.gaveta, 20000);
+    testar('origem "manual"', calcularData(dados, "2026-12-05").origemAnterior, "manual");
+
+    apagarDia(dados, "2026-12-02");
+    testar('apagar dia 02: dia 05 sem manual passaria a vir do dia 01', datasSalvas(dados).join(","), "2026-12-01,2026-12-05");
+
+    // ---- Backup ----
+    const restaurado = lerBackup(gerarBackup(dados));
+    testar('backup: ida e volta mantém os dias', JSON.stringify(restaurado.dias), JSON.stringify(dados.dias));
+    testar('backup: mantém a temporada', restaurado.temporada.saldoInicial.gaveta, 100000);
+    const erroDe = (txt) => { try { lerBackup(txt); return "aceitou"; } catch (e) { return e.message; } };
+    testar('backup: arquivo que não é JSON', erroDe("oi"), "Este arquivo não é um backup do Caixa na Mão (não é JSON).");
+    testar('backup: JSON de outro app', erroDe('{"a":1}'), "Este arquivo não é um backup do Caixa na Mão.");
+    testar('backup: versão mais nova', erroDe('{"app":"caixa-na-mao","versao":99}'), "Este backup foi feito numa versão mais nova do Caixa na Mão.");
+    const sujo = lerBackup(JSON.stringify({
+      app: "caixa-na-mao", versao: 1,
+      dias: {
+        "2026-12-01": { entradas: { dinheiro: -500, pix: "abc", hack: 1 }, saidas: { taxas: { valor: 300, pagoCom: "xyz" } }, contado: 1.5 },
+        "data-errada": { entradas: { dinheiro: 100 } },
+      },
+    }));
+    testar('backup: valor negativo vira 0', sujo.dias["2026-12-01"].entradas.dinheiro, 0);
+    testar('backup: texto no lugar de valor vira 0', sujo.dias["2026-12-01"].entradas.pix, 0);
+    testar('backup: campo desconhecido é descartado', "hack" in sujo.dias["2026-12-01"].entradas, false);
+    testar('backup: forma de pagamento inválida vira gaveta', sujo.dias["2026-12-01"].saidas.taxas.pagoCom, "gaveta");
+    testar('backup: contado com fração é descartado', sujo.dias["2026-12-01"].contado, null);
+    testar('backup: data inválida é descartada', Object.keys(sujo.dias).join(","), "2026-12-01");
+    testar('nome do backup', nomeDoBackup(new Date(2026, 11, 1)), "caixa-na-mao-backup-2026-12-01.json");
+
+    // ---- Mostrar ----
+    const corpo = document.getElementById("resultados");
+    const fmt = (v) => v === null ? "null" : JSON.stringify(v);
+    resultados.forEach((r) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td class="${r.ok ? "ok" : "falha"}">${r.ok ? "✔" : "✘"}</td><td></td><td>${fmt(r.esperado)}</td><td>${fmt(r.obtido)}</td>`;
+      tr.children[1].textContent = r.nome;
+      corpo.appendChild(tr);
+    });
+    const falhas = resultados.filter((r) => !r.ok).length;
+    const resumo = document.getElementById("resumo");
+    resumo.textContent = falhas
+      ? `${falhas} de ${resultados.length} testes falharam`
+      : `Todos os ${resultados.length} testes passaram`;
+    resumo.className = falhas ? "falha-geral" : "ok-geral";
+    window.resultadoTestes = { total: resultados.length, falhas };
+  </script>
+</body>
+</html>

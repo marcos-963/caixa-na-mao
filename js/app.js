@@ -1,0 +1,494 @@
+/*
+ * Caixa na Mão — liga a tela aos cálculos e ao armazenamento.
+ * Depende de dinheiro.js, calculos.js e armazenamento.js (carregados antes).
+ */
+
+const ENTRADAS = [
+  { tipo: "dinheiro", rotulo: "Dinheiro", dica: "Em espécie · vai para a gaveta" },
+  { tipo: "pix", rotulo: "Pix", dica: "Vai para o banco" },
+  { tipo: "debito", rotulo: "Cartão de débito", dica: "Vai para o banco" },
+  { tipo: "credito", rotulo: "Cartão de crédito", dica: "Cai no banco depois" },
+  { tipo: "outras", rotulo: "Outras entradas", dica: "Transferência, adiantamento…", escolheLugar: true },
+];
+
+const SAIDAS = [
+  { tipo: "materiais", rotulo: "Compras de materiais", dica: "Garrafas, gelo, ingredientes" },
+  { tipo: "embalagens", rotulo: "Embalagens e descartáveis", dica: "Copos, canudos, sacolas, guardanapos" },
+  { tipo: "fretes", rotulo: "Fretes e transporte", dica: "Ônibus, entregas, combustível" },
+  { tipo: "pessoais", rotulo: "Despesas pessoais", dica: "Alimentação, retirada para casa" },
+  { tipo: "taxas", rotulo: "Taxas e tarifas", dica: "Maquininha, banco", padrao: "banco" },
+  { tipo: "outras", rotulo: "Outras despesas", dica: "Manutenção, doações, diversas" },
+];
+
+const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const ORDEM_FOLGAS = [1, 2, 3, 4, 5, 6, 0]; // Seg … Dom
+const MSG_INVALIDO = "Valor não reconhecido. Use só números, com vírgula ou ponto nos centavos (ex.: 12,50).";
+
+const $ = (id) => document.getElementById(id);
+
+let dados = carregarDados();
+let dataAtual = hojeISO();
+
+// ---------------------------------------------------------------------------
+// Datas
+// ---------------------------------------------------------------------------
+
+function paraISO(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+function deISO(iso) {
+  const [a, m, d] = iso.split("-").map(Number);
+  return new Date(a, m - 1, d);
+}
+function hojeISO() { return paraISO(new Date()); }
+function somarDias(iso, n) {
+  const d = deISO(iso);
+  d.setDate(d.getDate() + n);
+  return paraISO(d);
+}
+function dataCurta(iso) {
+  const [, m, d] = iso.split("-");
+  return `${d}/${m}`;
+}
+
+// ---------------------------------------------------------------------------
+// Formatação
+// ---------------------------------------------------------------------------
+
+function moeda(centavos) {
+  return (centavos < 0 ? "− " : "") + "R$ " + formatarCentavos(Math.abs(centavos));
+}
+
+// ---------------------------------------------------------------------------
+// Montagem das linhas de entradas e saídas
+// ---------------------------------------------------------------------------
+
+function htmlCampoValor(id, campo) {
+  return `
+    <div class="campo-valor">
+      <span>R$</span>
+      <input id="${id}" data-campo="${campo}" inputmode="decimal" autocomplete="off" placeholder="0,00" />
+      <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
+    </div>
+    <p class="erro-campo" hidden></p>`;
+}
+
+function htmlAlternador(nome, rotulo) {
+  return `
+    <div class="alternador" role="radiogroup" aria-label="${rotulo}">
+      <label><input type="radio" name="${nome}" value="gaveta" /><span>Gaveta</span></label>
+      <label><input type="radio" name="${nome}" value="banco" /><span>Banco</span></label>
+    </div>`;
+}
+
+function montarLinhas() {
+  $("linhasEntradas").innerHTML = ENTRADAS.map((e) => `
+    <div class="linha">
+      <div class="linha-rotulo">
+        <label for="ent-${e.tipo}">${e.rotulo}</label>
+        <small>${e.dica}</small>
+      </div>
+      ${htmlCampoValor(`ent-${e.tipo}`, `entrada.${e.tipo}`)}
+      <div class="linha-extra">
+        <input class="descricao" data-desc="entrada.${e.tipo}" maxlength="200" placeholder="Observação (opcional)" aria-label="Observação: ${e.rotulo}" />
+        ${e.escolheLugar ? htmlAlternador("outrasEntradasEm", "Onde entrou") : ""}
+      </div>
+    </div>`).join("");
+
+  $("linhasSaidas").innerHTML = SAIDAS.map((s) => `
+    <div class="linha">
+      <div class="linha-rotulo">
+        <label for="sai-${s.tipo}">${s.rotulo}</label>
+        <small>${s.dica}</small>
+      </div>
+      ${htmlCampoValor(`sai-${s.tipo}`, `saida.${s.tipo}`)}
+      <div class="linha-extra">
+        <input class="descricao" data-desc="saida.${s.tipo}" maxlength="200" placeholder="Observação (opcional)" aria-label="Observação: ${s.rotulo}" />
+        ${htmlAlternador(`pago-${s.tipo}`, `Pago com (${s.rotulo})`)}
+      </div>
+    </div>`).join("");
+
+  $("listaFolgas").innerHTML = ORDEM_FOLGAS.map((d) => `
+    <label class="folga">
+      <input type="checkbox" value="${d}" />
+      <span>${DIAS_SEMANA[d].slice(0, 3)}</span>
+    </label>`).join("");
+}
+
+// ---------------------------------------------------------------------------
+// Dia atual
+// ---------------------------------------------------------------------------
+
+function diaEstaVazio(dia) {
+  return Object.keys(dia.entradas).length === 0
+    && Object.keys(dia.saidas).length === 0
+    && dia.contado === null
+    && dia.anteriorManual === null
+    && !dia.anotacoes
+    && Object.values(dia.descricoes).every((t) => !t);
+}
+
+/** Lê o dia atual, aplica a mudança e grava (ou apaga, se ficou vazio). */
+function alterarDia(mudanca) {
+  const dia = lerDia(dados, dataAtual);
+  mudanca(dia);
+  if (diaEstaVazio(dia)) apagarDia(dados, dataAtual);
+  else gravarDia(dados, dataAtual, dia);
+  salvar();
+}
+
+function pagoComSelecionado(tipo) {
+  const marcado = document.querySelector(`input[name="pago-${tipo}"]:checked`);
+  return marcado ? marcado.value : "gaveta";
+}
+
+/** Guarda o valor (em centavos, ou null se vazio) de um campo data-campo. */
+function aplicarCampo(campo, valor) {
+  const [grupo, chave, sub] = campo.split(".");
+
+  if (grupo === "temporada") {
+    if (chave === "meta") dados.temporada.meta = valor;
+    else dados.temporada.saldoInicial[sub] = valor ?? 0;
+    salvar();
+    return;
+  }
+
+  alterarDia((dia) => {
+    if (grupo === "entrada") {
+      if (valor === null) delete dia.entradas[chave];
+      else dia.entradas[chave] = valor;
+    } else if (grupo === "saida") {
+      if (valor === null) delete dia.saidas[chave];
+      else dia.saidas[chave] = { valor, pagoCom: pagoComSelecionado(chave) };
+    } else if (grupo === "contado") {
+      dia.contado = valor;
+    } else if (grupo === "anterior") {
+      // Ao ajustar à mão, o outro lado começa com o valor automático atual.
+      const base = dia.anteriorManual || saldoAnteriorDe(dados, dataAtual).anterior;
+      dia.anteriorManual = { ...base, [chave]: valor ?? 0 };
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Salvar
+// ---------------------------------------------------------------------------
+
+function salvar() {
+  const ok = salvarDados(dados);
+  $("avisoArmazenamento").hidden = ok;
+  $("estadoSalvo").textContent = ok
+    ? "Tudo é salvo automaticamente neste navegador."
+    : "Atenção: não está salvando neste navegador.";
+}
+
+// ---------------------------------------------------------------------------
+// Campos de valor: validação, ✕ e formatação
+// ---------------------------------------------------------------------------
+
+function partesDoCampo(input) {
+  const caixa = input.closest(".campo-valor");
+  return { caixa, limpar: caixa.querySelector(".limpar-campo"), erro: caixa.nextElementSibling };
+}
+
+function marcarValidade(input) {
+  const { caixa, limpar, erro } = partesDoCampo(input);
+  const valor = lerCentavos(input.value);
+  const valido = valor !== null;
+  caixa.classList.toggle("invalido", !valido);
+  input.setAttribute("aria-invalid", String(!valido));
+  if (erro && erro.classList.contains("erro-campo")) {
+    erro.hidden = valido;
+    erro.textContent = valido ? "" : MSG_INVALIDO;
+  }
+  limpar.hidden = input.value === "";
+  return valor;
+}
+
+function mostrarValor(input, centavos) {
+  input.value = centavos === null || centavos === undefined ? "" : formatarCentavos(centavos);
+  marcarValidade(input);
+}
+
+function aoDigitarValor(input) {
+  const valor = marcarValidade(input);
+  if (valor === null) return; // inválido: não salva, mantém o último valor bom
+  aplicarCampo(input.dataset.campo, input.value.trim() === "" ? null : valor);
+  atualizarTela();
+}
+
+function ligarCamposDeValor() {
+  document.addEventListener("input", (ev) => {
+    const el = ev.target;
+    if (el.matches("input[data-campo]")) aoDigitarValor(el);
+  });
+
+  document.addEventListener("focusout", (ev) => {
+    const el = ev.target;
+    if (!el.matches("input[data-campo]") || el.value.trim() === "") return;
+    const valor = lerCentavos(el.value);
+    if (valor !== null) mostrarValor(el, valor);
+  });
+
+  document.addEventListener("keydown", (ev) => {
+    const el = ev.target;
+    if (ev.key !== "Enter" || !el.matches("input[data-campo]")) return;
+    ev.preventDefault();
+    const campos = [...document.querySelectorAll("input[data-campo]")].filter((c) => c.offsetParent !== null);
+    const proximo = campos[campos.indexOf(el) + 1];
+    if (proximo) proximo.focus(); else el.blur();
+  });
+
+  document.addEventListener("click", (ev) => {
+    const botao = ev.target.closest(".limpar-campo");
+    if (!botao) return;
+    const input = botao.closest(".campo-valor").querySelector("input");
+    input.value = "";
+    aoDigitarValor(input);
+    input.focus();
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Outros campos
+// ---------------------------------------------------------------------------
+
+function ligarOutrosCampos() {
+  document.addEventListener("input", (ev) => {
+    const el = ev.target;
+    if (el.matches("input[data-desc]")) {
+      alterarDia((dia) => {
+        if (el.value.trim()) dia.descricoes[el.dataset.desc] = el.value;
+        else delete dia.descricoes[el.dataset.desc];
+      });
+    } else if (el.id === "anotacoes") {
+      alterarDia((dia) => { dia.anotacoes = el.value; });
+    }
+  });
+
+  document.addEventListener("change", (ev) => {
+    const el = ev.target;
+    if (el.name === "outrasEntradasEm") {
+      alterarDia((dia) => { dia.outrasEntradasEm = el.value; });
+      atualizarTela();
+    } else if (el.name && el.name.startsWith("pago-")) {
+      const tipo = el.name.slice(5);
+      alterarDia((dia) => { if (dia.saidas[tipo]) dia.saidas[tipo].pagoCom = el.value; });
+      atualizarTela();
+    } else if (el.closest("#listaFolgas")) {
+      dados.temporada.folgas = [...document.querySelectorAll("#listaFolgas input:checked")].map((c) => Number(c.value));
+      salvar();
+      atualizarTela();
+    } else if (el.id === "inicioTemporada" || el.id === "fimTemporada") {
+      dados.temporada[el.id === "inicioTemporada" ? "inicio" : "fim"] = el.value;
+      salvar();
+      atualizarTela();
+    }
+  });
+
+  $("usarAnteriorAutomatico").addEventListener("click", () => {
+    alterarDia((dia) => { dia.anteriorManual = null; });
+    mostrarValor($("anteriorGaveta"), null);
+    mostrarValor($("anteriorBanco"), null);
+    $("ajusteAnterior").open = false;
+    atualizarTela();
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Navegação entre dias
+// ---------------------------------------------------------------------------
+
+function irPara(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+  dataAtual = iso;
+  preencherDia();
+}
+
+function ligarNavegacao() {
+  $("data").addEventListener("change", (ev) => { if (ev.target.value) irPara(ev.target.value); });
+  $("diaAnterior").addEventListener("click", () => irPara(somarDias(dataAtual, -1)));
+  $("diaSeguinte").addEventListener("click", () => irPara(somarDias(dataAtual, 1)));
+  $("irParaHoje").addEventListener("click", () => irPara(hojeISO()));
+}
+
+// ---------------------------------------------------------------------------
+// Ações
+// ---------------------------------------------------------------------------
+
+function ligarAcoes() {
+  $("imprimir").addEventListener("click", () => window.print());
+
+  $("exportar").addEventListener("click", () => baixarBackup(dados));
+
+  $("importar").addEventListener("click", () => $("arquivoBackup").click());
+  $("arquivoBackup").addEventListener("change", async (ev) => {
+    const arquivo = ev.target.files[0];
+    ev.target.value = "";
+    if (!arquivo) return;
+    try {
+      const novos = lerBackup(await arquivo.text());
+      const qtd = datasSalvas(novos).length;
+      const ok = confirm(`Este backup tem ${qtd} dia(s) registrado(s).\n\nSubstituir TODOS os dados deste navegador pelos do backup?`);
+      if (!ok) return;
+      dados = novos;
+      salvar();
+      preencherTemporada();
+      preencherDia();
+    } catch (erro) {
+      alert(erro.message);
+    }
+  });
+
+  $("limparDia").addEventListener("click", () => {
+    const dataTexto = deISO(dataAtual).toLocaleDateString("pt-BR");
+    if (!confirm(`Apagar todos os valores de ${dataTexto}?`)) return;
+    apagarDia(dados, dataAtual);
+    salvar();
+    preencherDia();
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Preencher a tela
+// ---------------------------------------------------------------------------
+
+function preencherDia() {
+  const dia = lerDia(dados, dataAtual);
+
+  $("data").value = dataAtual;
+  $("diaSemana").textContent = DIAS_SEMANA[deISO(dataAtual).getDay()].slice(0, 3);
+
+  for (const e of ENTRADAS) mostrarValor($(`ent-${e.tipo}`), dia.entradas[e.tipo]);
+  for (const s of SAIDAS) {
+    const saida = dia.saidas[s.tipo];
+    mostrarValor($(`sai-${s.tipo}`), saida ? saida.valor : null);
+    const lugar = saida ? saida.pagoCom : (s.padrao || "gaveta");
+    document.querySelector(`input[name="pago-${s.tipo}"][value="${lugar}"]`).checked = true;
+  }
+  document.querySelector(`input[name="outrasEntradasEm"][value="${dia.outrasEntradasEm}"]`).checked = true;
+
+  document.querySelectorAll("input[data-desc]").forEach((el) => {
+    el.value = dia.descricoes[el.dataset.desc] || "";
+  });
+  $("anotacoes").value = dia.anotacoes;
+
+  mostrarValor($("contado"), dia.contado);
+  mostrarValor($("anteriorGaveta"), dia.anteriorManual ? dia.anteriorManual.gaveta : null);
+  mostrarValor($("anteriorBanco"), dia.anteriorManual ? dia.anteriorManual.banco : null);
+  $("ajusteAnterior").open = !!dia.anteriorManual;
+
+  atualizarTela();
+}
+
+function preencherTemporada() {
+  const t = dados.temporada;
+  mostrarValor($("metaTemporada"), t.meta);
+  mostrarValor($("inicialGaveta"), t.saldoInicial.gaveta || null);
+  mostrarValor($("inicialBanco"), t.saldoInicial.banco || null);
+  $("inicioTemporada").value = t.inicio;
+  $("fimTemporada").value = t.fim;
+  document.querySelectorAll("#listaFolgas input").forEach((c) => {
+    c.checked = t.folgas.includes(Number(c.value));
+  });
+}
+
+/** Recalcula e mostra todos os resultados. */
+function atualizarTela() {
+  const { anterior, origemAnterior, resultado: r } = calcularData(dados, dataAtual);
+
+  // Resumo
+  const resultado = $("resResultado");
+  resultado.textContent = moeda(r.resultadoDia);
+  resultado.classList.toggle("negativo", r.resultadoDia < 0);
+  $("resGaveta").textContent = moeda(r.saldoFinal.gaveta);
+  $("resBanco").textContent = moeda(r.saldoFinal.banco);
+  $("resTotal").textContent = moeda(r.saldoAcumulado);
+  $("resGaveta").classList.toggle("negativo", r.saldoFinal.gaveta < 0);
+  $("resTotal").classList.toggle("negativo", r.saldoAcumulado < 0);
+
+  // Totais
+  $("totalEntradas").textContent = moeda(r.totalEntradas);
+  $("totalSaidas").textContent = moeda(r.totalSaidas);
+
+  // Conferência
+  $("confAnterior").textContent = moeda(anterior.gaveta);
+  $("confEntrou").textContent = moeda(r.entrouNaGaveta);
+  $("confSaiu").textContent = moeda(r.saiuDaGaveta);
+  $("confEsperado").textContent = moeda(r.gavetaEsperada);
+  $("origemAnterior").textContent =
+    origemAnterior === "manual" ? "(ajustado à mão)"
+    : origemAnterior === "inicio-temporada" ? "(início da temporada)"
+    : `(veio de ${dataCurta(origemAnterior)})`;
+
+  const conf = $("conferencia");
+  conf.dataset.estado = r.conferencia;
+  conf.textContent = {
+    "nao-conferido": "Conte a gaveta para conferir.",
+    bateu: "✓ O caixa bateu!",
+    sobrou: `Sobrou ${moeda(r.diferenca)} na gaveta. Confira se faltou anotar alguma entrada.`,
+    faltou: `Faltou ${moeda(-r.diferenca)} na gaveta. Confira se faltou anotar alguma saída.`,
+  }[r.conferencia];
+
+  // Placeholders do ajuste mostram o saldo automático
+  if (origemAnterior !== "manual") {
+    const auto = saldoAnteriorDe(dados, dataAtual).anterior;
+    $("anteriorGaveta").placeholder = formatarCentavos(auto.gaveta);
+    $("anteriorBanco").placeholder = formatarCentavos(auto.banco);
+  }
+
+  atualizarMeta(r);
+}
+
+function atualizarMeta(r) {
+  const t = dados.temporada;
+  const inicial = t.saldoInicial.gaveta + t.saldoInicial.banco;
+  const temDatas = t.inicio && t.fim && t.fim >= t.inicio;
+  const dias = temDatas ? contarDiasDeTrabalho(t.inicio, t.fim, t.folgas) : 0;
+  const falta = t.meta === null ? null : t.meta - inicial;
+  const metaDia = falta !== null && falta > 0 ? calcularMetaDiaria(falta, dias) : null;
+
+  // Texto do painel da temporada
+  const partes = [];
+  if (t.meta !== null) partes.push(`Meta: ${moeda(t.meta)}`);
+  if (temDatas) partes.push(`${dataCurta(t.inicio)} a ${dataCurta(t.fim)}`);
+  $("resumoTemporada").textContent = partes.length ? partes.join(" · ") : "Defina a meta e as datas da temporada";
+
+  let explicacao = "";
+  if (t.meta !== null && !temDatas) explicacao = "Informe o início e o fim da temporada para calcular a meta por dia.";
+  else if (t.meta !== null && dias === 0) explicacao = "Não há dias de trabalho entre essas datas.";
+  else if (falta !== null && falta <= 0) explicacao = "O saldo inicial já alcança a meta da temporada.";
+  else if (metaDia !== null) {
+    const ultimoSalvo = datasSalvas(dados).filter((d) => d <= t.fim).pop();
+    const saldoAgora = ultimoSalvo ? calcularData(dados, ultimoSalvo).resultado.saldoAcumulado : inicial;
+    const pct = Math.max(0, Math.min(100, Math.round((saldoAgora / t.meta) * 100)));
+    explicacao = `${dias} dias de trabalho → precisa de ${moeda(metaDia)} de resultado por dia. `
+      + `Até agora: ${moeda(saldoAgora)} de ${moeda(t.meta)} (${pct}%).`;
+  }
+  $("calculoMeta").textContent = explicacao;
+
+  // Barra da meta do dia
+  const caixa = $("metaDia");
+  caixa.hidden = metaDia === null;
+  if (metaDia === null) return;
+  const pctDia = Math.max(0, Math.round((r.resultadoDia / metaDia) * 100));
+  $("metaValor").textContent = moeda(metaDia);
+  $("metaPercentual").textContent = `${pctDia}%`;
+  $("metaBarra").style.width = Math.min(100, pctDia) + "%";
+  caixa.querySelector(".meta-barra").setAttribute("aria-valuenow", String(Math.min(100, pctDia)));
+  caixa.classList.toggle("alcancada", pctDia >= 100);
+}
+
+// ---------------------------------------------------------------------------
+// Início
+// ---------------------------------------------------------------------------
+
+montarLinhas();
+ligarCamposDeValor();
+ligarOutrosCampos();
+ligarNavegacao();
+ligarAcoes();
+preencherTemporada();
+preencherDia();
+$("painelTemporada").open = dados.temporada.meta === null && datasSalvas(dados).length === 0;

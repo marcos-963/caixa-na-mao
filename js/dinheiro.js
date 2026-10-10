@@ -1,0 +1,50 @@
+/*
+ * Caixa na Mão — leitura e formatação de valores em reais.
+ *
+ * Os valores são guardados em CENTAVOS (números inteiros) para evitar
+ * erros de ponto flutuante (ex.: 0,1 + 0,2 = 0,30000000000000004).
+ */
+
+/**
+ * Lê um valor digitado e devolve os centavos (inteiro).
+ * Vazio devolve 0. Texto inválido devolve null.
+ *
+ * Aceita vírgula ou ponto para os centavos e ponto, vírgula ou espaço
+ * para o milhar: "12,50", "12.50", "1.000,50", "1,000.50", "1 000", "R$ 10".
+ * Recusa negativos, letras e separadores fora do lugar ("1,2,3", "12,345").
+ */
+function lerCentavos(texto) {
+  let s = String(texto ?? "").replace(/R\$/gi, "").replace(/\s/g, "");
+  if (s === "") return 0;
+  if (!/^\d[\d.,]*$/.test(s)) return null;
+
+  const sep = Math.max(s.lastIndexOf(","), s.lastIndexOf("."));
+  let inteiro = s;
+  let decimal = "";
+
+  // O último separador é decimal quando tem 1 ou 2 dígitos depois dele (ou nenhum: "12,").
+  if (sep !== -1 && s.length - sep - 1 <= 2) {
+    inteiro = s.slice(0, sep);
+    decimal = s.slice(sep + 1);
+  }
+
+  // Separador de milhar só vale em grupos de 3 dígitos: "1.000", "12.345.678".
+  if (/[.,]/.test(inteiro) && !/^\d{1,3}([.,]\d{3})+$/.test(inteiro)) return null;
+  // Uma única vírgula seguida de 3 dígitos é ambígua ("12,345" é 12,34 com erro
+  // de digitação ou doze mil?): recusa para a pessoa conferir.
+  if (/^\d+,\d{3}$/.test(s)) return null;
+
+  const reais = Number(inteiro.replace(/[.,]/g, "") || "0");
+  const centavos = Number(decimal.padEnd(2, "0") || "0");
+  if (!Number.isSafeInteger(reais)) return null;
+  return reais * 100 + centavos;
+}
+
+/** Formata centavos como "1.234,56" (sem o "R$"). */
+function formatarCentavos(centavos) {
+  const negativo = centavos < 0;
+  const abs = Math.abs(Math.round(centavos));
+  const reais = Math.floor(abs / 100).toLocaleString("pt-BR");
+  const cents = String(abs % 100).padStart(2, "0");
+  return (negativo ? "-" : "") + reais + "," + cents;
+}

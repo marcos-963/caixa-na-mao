@@ -1,0 +1,13 @@
+# Versão corrigida do projeto do colega (só referência, não faz parte do Caixa na Mão)
+controle-de-caixa-corrigido/
+
+# Configuração local do Claude Code
+.claude/
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Backups exportados pelo app (contêm dados financeiros)
+caixa-na-mao-backup-*.json
