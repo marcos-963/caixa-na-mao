@@ -1,3 +1,6 @@
+/*! Caixa na Mão © 2026 Marcus Deleon™ – Tecnologia de Ponta. Todos os direitos reservados.
+ *  Proibida a cópia, modificação ou distribuição sem autorização. Veja LICENSE. */
+
 /* Caixa na Mão — estilo (azul petróleo, celular primeiro) */
 
 :root {
@@ -603,6 +606,7 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
   color: var(--texto-suave);
 }
 .assinatura strong { color: var(--petroleo-700); }
+.assinatura small { display: block; margin-top: 2px; font-size: 11px; opacity: .85; }
 
 /* ---------------------------------------------------------------- Telas maiores */
 

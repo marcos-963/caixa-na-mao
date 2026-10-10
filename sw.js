@@ -1,3 +1,6 @@
+/*! Caixa na Mão © 2026 Marcus Deleon™ – Tecnologia de Ponta. Todos os direitos reservados.
+ *  Proibida a cópia, modificação ou distribuição sem autorização. Veja LICENSE. */
+
 /*
  * Caixa na Mão — service worker: deixa o app funcionar sem internet.
  *
@@ -6,7 +9,7 @@
  * Ao mudar os arquivos do app, aumente a VERSAO para limpar o cache antigo.
  */
 
-const VERSAO = "caixa-na-mao-v1";
+const VERSAO = "caixa-na-mao-v2";
 
 const ARQUIVOS = [
   "./",

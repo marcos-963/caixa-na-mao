@@ -42,6 +42,10 @@ caixa-na-mao/
 
 Abra `testes/testes.html` no navegador. A página mostra cada teste e se passou.
 
----
+## Direitos autorais
 
-**Marcus Deleon™ – Tecnologia de Ponta**
+© 2026 **Marcus Deleon™ – Tecnologia de Ponta**. Todos os direitos reservados.
+
+O código está visível apenas para consulta. É proibido copiar, modificar,
+distribuir ou usar comercialmente sem autorização por escrito do autor.
+Veja o arquivo [LICENSE](LICENSE).

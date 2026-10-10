@@ -1,3 +1,6 @@
+/*! Caixa na Mão © 2026 Marcus Deleon™ – Tecnologia de Ponta. Todos os direitos reservados.
+ *  Proibida a cópia, modificação ou distribuição sem autorização. Veja LICENSE. */
+
 /*
  * Caixa na Mão — cálculos do dia.
  *
