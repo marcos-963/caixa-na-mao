@@ -37,6 +37,11 @@
 
     <!-- Resumo do dia -->
     <section class="resumo" aria-label="Resumo do dia">
+      <div class="indicador">
+        <span class="indicador-rotulo">Saldo anterior</span>
+        <strong class="indicador-valor" id="resAnterior">R$ 0,00</strong>
+        <span class="indicador-nota" id="resAnteriorNota">Gaveta + banco</span>
+      </div>
       <div class="indicador destaque">
         <span class="indicador-rotulo">Resultado do dia</span>
         <strong class="indicador-valor" id="resResultado">R$ 0,00</strong>
@@ -52,10 +57,10 @@
         <strong class="indicador-valor" id="resBanco">R$ 0,00</strong>
         <span class="indicador-nota">Pix e cartões</span>
       </div>
-      <div class="indicador">
+      <div class="indicador total">
         <span class="indicador-rotulo">Saldo total</span>
         <strong class="indicador-valor" id="resTotal">R$ 0,00</strong>
-        <span class="indicador-nota">Gaveta + banco</span>
+        <span class="indicador-nota">Saldo anterior + resultado</span>
       </div>
       <div class="meta-dia" id="metaDia" hidden>
         <div class="meta-cabecalho">
@@ -107,23 +112,31 @@
           <div class="campo-duplo saldo-anterior">
             <div class="campo">
               <label for="anteriorGaveta">Na gaveta</label>
-              <div class="campo-valor">
-                <span>R$</span>
-                <input id="anteriorGaveta" data-campo="anterior.gaveta" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-                <button type="button" class="limpar-campo" aria-label="Limpar saldo anterior na gaveta" title="Limpar">✕</button>
+              <div class="valor-com-limpar">
+                <div class="campo-valor">
+                  <span>R$</span>
+                  <input id="anteriorGaveta" data-campo="anterior.gaveta" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+                </div>
+                <button type="button" class="limpar-campo" aria-label="Limpar saldo anterior na gaveta">Limpar</button>
               </div>
               <p class="erro-campo" hidden></p>
             </div>
             <div class="campo">
               <label for="anteriorBanco">No banco</label>
-              <div class="campo-valor">
-                <span>R$</span>
-                <input id="anteriorBanco" data-campo="anterior.banco" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-                <button type="button" class="limpar-campo" aria-label="Limpar saldo anterior no banco" title="Limpar">✕</button>
+              <div class="valor-com-limpar">
+                <div class="campo-valor">
+                  <span>R$</span>
+                  <input id="anteriorBanco" data-campo="anterior.banco" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+                </div>
+                <button type="button" class="limpar-campo" aria-label="Limpar saldo anterior no banco">Limpar</button>
               </div>
               <p class="erro-campo" hidden></p>
             </div>
           </div>
+          <p class="dica-anterior" id="dicaPrimeiroDia" hidden>
+            Primeiro dia? Digite aqui quanto você tinha na gaveta e no banco antes de começar.
+            Os próximos dias pegam o saldo sozinhos.
+          </p>
           <div class="anterior-manual" id="avisoAnteriorManual" hidden>
             <span>Saldo anterior ajustado à mão.</span>
             <button type="button" class="botao-texto" id="usarAnteriorAutomatico">Voltar ao automático</button>
@@ -158,10 +171,12 @@
 
           <div class="campo">
             <label for="contado">Quanto tem de verdade na gaveta?</label>
-            <div class="campo-valor grande">
-              <span>R$</span>
-              <input id="contado" data-campo="contado" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-              <button type="button" class="limpar-campo" aria-label="Limpar valor" title="Limpar">✕</button>
+            <div class="valor-com-limpar">
+              <div class="campo-valor grande">
+                <span>R$</span>
+                <input id="contado" data-campo="contado" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+              </div>
+              <button type="button" class="limpar-campo" aria-label="Limpar valor">Limpar</button>
             </div>
             <p class="erro-campo" hidden></p>
           </div>
@@ -170,19 +185,19 @@
         </section>
 
         <!-- Anotações -->
-        <section class="cartao" aria-labelledby="tituloAnotacoes">
+        <section class="cartao" id="cartaoAnotacoes" aria-labelledby="tituloAnotacoes">
           <header class="cartao-cabecalho">
             <h2 id="tituloAnotacoes">Anotações</h2>
             <p>O que aconteceu hoje que vale lembrar?</p>
           </header>
           <div class="anotacoes">
             <textarea id="anotacoes" rows="4" maxlength="2000" placeholder="Ex.: dia de chuva, faltou gelo às 14h…"></textarea>
-            <button type="button" class="limpar-texto" data-limpa="anotacoes" aria-label="Limpar anotações" title="Limpar">✕</button>
+            <button type="button" class="limpar-texto" data-limpa="anotacoes" aria-label="Limpar anotações">Limpar</button>
           </div>
         </section>
 
         <!-- Temporada -->
-        <section class="cartao" aria-labelledby="tituloTemporada">
+        <section class="cartao" id="cartaoTemporada" aria-labelledby="tituloTemporada">
           <details id="painelTemporada">
             <summary class="cartao-cabecalho">
               <h2 id="tituloTemporada">Temporada e meta</h2>
@@ -191,10 +206,12 @@
             <div class="temporada">
               <div class="campo">
                 <label for="metaTemporada">Quero terminar a temporada com</label>
-                <div class="campo-valor">
-                  <span>R$</span>
-                  <input id="metaTemporada" data-campo="temporada.meta" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-                  <button type="button" class="limpar-campo" aria-label="Limpar valor" title="Limpar">✕</button>
+                <div class="valor-com-limpar">
+                  <div class="campo-valor">
+                    <span>R$</span>
+                    <input id="metaTemporada" data-campo="temporada.meta" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+                  </div>
+                  <button type="button" class="limpar-campo" aria-label="Limpar valor">Limpar</button>
                 </div>
                 <p class="erro-campo" hidden></p>
               </div>
@@ -215,19 +232,23 @@
               <div class="campo-duplo">
                 <div class="campo">
                   <label for="inicialGaveta">Comecei com (gaveta)</label>
-                  <div class="campo-valor">
-                    <span>R$</span>
-                    <input id="inicialGaveta" data-campo="temporada.saldoInicial.gaveta" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-                    <button type="button" class="limpar-campo" aria-label="Limpar valor" title="Limpar">✕</button>
+                  <div class="valor-com-limpar">
+                    <div class="campo-valor">
+                      <span>R$</span>
+                      <input id="inicialGaveta" data-campo="temporada.saldoInicial.gaveta" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+                    </div>
+                    <button type="button" class="limpar-campo" aria-label="Limpar valor">Limpar</button>
                   </div>
                   <p class="erro-campo" hidden></p>
                 </div>
                 <div class="campo">
                   <label for="inicialBanco">Comecei com (banco)</label>
-                  <div class="campo-valor">
-                    <span>R$</span>
-                    <input id="inicialBanco" data-campo="temporada.saldoInicial.banco" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-                    <button type="button" class="limpar-campo" aria-label="Limpar valor" title="Limpar">✕</button>
+                  <div class="valor-com-limpar">
+                    <div class="campo-valor">
+                      <span>R$</span>
+                      <input id="inicialBanco" data-campo="temporada.saldoInicial.banco" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+                    </div>
+                    <button type="button" class="limpar-campo" aria-label="Limpar valor">Limpar</button>
                   </div>
                   <p class="erro-campo" hidden></p>
                 </div>

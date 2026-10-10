@@ -66,10 +66,12 @@ function moeda(centavos) {
 
 function htmlCampoValor(id, campo) {
   return `
-    <div class="campo-valor">
-      <span>R$</span>
-      <input id="${id}" data-campo="${campo}" inputmode="numeric" autocomplete="off" placeholder="0,00" />
-      <button type="button" class="limpar-campo" aria-label="Limpar valor" title="Limpar">✕</button>
+    <div class="valor-com-limpar">
+      <div class="campo-valor">
+        <span>R$</span>
+        <input id="${id}" data-campo="${campo}" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+      </div>
+      <button type="button" class="limpar-campo" aria-label="Limpar valor">Limpar</button>
     </div>
     <p class="erro-campo" hidden></p>`;
 }
@@ -93,7 +95,7 @@ function montarLinhas() {
       <div class="linha-extra">
         <span class="texto-com-limpar">
           <input class="descricao" data-desc="entrada.${e.tipo}" maxlength="200" placeholder="Observação (opcional)" aria-label="Observação: ${e.rotulo}" />
-          <button type="button" class="limpar-texto" aria-label="Limpar observação" title="Limpar">✕</button>
+          <button type="button" class="limpar-texto" aria-label="Limpar observação">Limpar</button>
         </span>
         ${e.escolheLugar ? htmlAlternador("outrasEntradasEm", "Onde entrou") : ""}
       </div>
@@ -109,7 +111,7 @@ function montarLinhas() {
       <div class="linha-extra">
         <span class="texto-com-limpar">
           <input class="descricao" data-desc="saida.${s.tipo}" maxlength="200" placeholder="Observação (opcional)" aria-label="Observação: ${s.rotulo}" />
-          <button type="button" class="limpar-texto" aria-label="Limpar observação" title="Limpar">✕</button>
+          <button type="button" class="limpar-texto" aria-label="Limpar observação">Limpar</button>
         </span>
         ${htmlAlternador(`pago-${s.tipo}`, `Pago com (${s.rotulo})`)}
       </div>
@@ -169,6 +171,12 @@ function aplicarCampo(campo, valor) {
       else dia.saidas[chave] = { valor, pagoCom: pagoComSelecionado(chave) };
     } else if (grupo === "contado") {
       dia.contado = valor;
+    } else if (grupo === "anterior" && !dia.anteriorManual
+               && saldoAnteriorDe(dados, dataAtual).origem === "inicio-temporada") {
+      // Primeiro dia: o saldo anterior é o saldo inicial da temporada,
+      // e os dias seguintes passam a partir dele.
+      dados.temporada.saldoInicial[chave] = valor ?? 0;
+      preencherTemporada();
     } else if (grupo === "anterior") {
       // Ao ajustar à mão, o outro lado começa com o valor automático atual.
       const base = dia.anteriorManual || saldoAnteriorDe(dados, dataAtual).anterior;
@@ -190,12 +198,13 @@ function salvar() {
 }
 
 // ---------------------------------------------------------------------------
-// Campos de valor: validação, ✕ e formatação
+// Campos de valor: validação, botão Limpar e formatação
 // ---------------------------------------------------------------------------
 
 function partesDoCampo(input) {
   const caixa = input.closest(".campo-valor");
-  return { caixa, limpar: caixa.querySelector(".limpar-campo"), erro: caixa.nextElementSibling };
+  const grupo = caixa.closest(".valor-com-limpar");
+  return { caixa, limpar: grupo.querySelector(".limpar-campo"), erro: grupo.nextElementSibling };
 }
 
 function marcarValidade(input) {
@@ -209,6 +218,8 @@ function marcarValidade(input) {
     erro.textContent = valido ? "" : MSG_INVALIDO;
   }
   limpar.disabled = input.value === "";
+  const linha = input.closest(".linha");
+  if (linha) linha.classList.toggle("vazia", input.value === "");
   return valor;
 }
 
@@ -278,7 +289,7 @@ function ligarCamposDeValor() {
     }
     const botao = ev.target.closest(".limpar-campo");
     if (!botao) return;
-    const input = botao.closest(".campo-valor").querySelector("input");
+    const input = botao.closest(".valor-com-limpar").querySelector("input");
     input.value = "";
     aoDigitarValor(input);
     input.focus();
@@ -288,6 +299,16 @@ function ligarCamposDeValor() {
 // ---------------------------------------------------------------------------
 // Outros campos
 // ---------------------------------------------------------------------------
+
+/** Botão "Limpar" das observações e anotações fica apagado quando o texto está vazio. */
+function atualizarBotoesTexto() {
+  document.querySelectorAll(".limpar-texto").forEach((botao) => {
+    const campo = botao.parentElement.querySelector("input, textarea");
+    botao.disabled = campo.value === "";
+    botao.parentElement.classList.toggle("vazio", campo.value === "");
+  });
+  $("cartaoAnotacoes").classList.toggle("vazio", $("anotacoes").value.trim() === "");
+}
 
 function ligarOutrosCampos() {
   document.addEventListener("input", (ev) => {
@@ -300,6 +321,7 @@ function ligarOutrosCampos() {
     } else if (el.id === "anotacoes") {
       alterarDia((dia) => { dia.anotacoes = el.value; });
     }
+    if (el.matches("input[data-desc], #anotacoes")) atualizarBotoesTexto();
   });
 
   document.addEventListener("change", (ev) => {
@@ -406,6 +428,7 @@ function preencherDia() {
     el.value = dia.descricoes[el.dataset.desc] || "";
   });
   $("anotacoes").value = dia.anotacoes;
+  atualizarBotoesTexto();
 
   mostrarValor($("contado"), dia.contado);
   preencherAnterior();
@@ -443,6 +466,11 @@ function atualizarTela() {
   $("resGaveta").textContent = moeda(r.saldoFinal.gaveta);
   $("resBanco").textContent = moeda(r.saldoFinal.banco);
   $("resTotal").textContent = moeda(r.saldoAcumulado);
+  $("resAnterior").textContent = moeda(anterior.gaveta + anterior.banco);
+  $("resAnteriorNota").textContent =
+    origemAnterior === "manual" ? "Ajustado à mão"
+    : origemAnterior === "inicio-temporada" ? "Início da temporada"
+    : `Veio do dia ${dataCurta(origemAnterior)}`;
   $("resGaveta").classList.toggle("negativo", r.saldoFinal.gaveta < 0);
   $("resTotal").classList.toggle("negativo", r.saldoAcumulado < 0);
 
@@ -460,6 +488,7 @@ function atualizarTela() {
     : origemAnterior === "inicio-temporada" ? "Veio do início da temporada"
     : `Veio do dia ${dataCurta(origemAnterior)}`;
   $("avisoAnteriorManual").hidden = origemAnterior !== "manual";
+  $("dicaPrimeiroDia").hidden = origemAnterior !== "inicio-temporada";
 
   const conf = $("conferencia");
   conf.dataset.estado = r.conferencia;
