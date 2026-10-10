@@ -62,6 +62,22 @@
     // ---- Sem erro de ponto flutuante ----
     testar('0,10 + 0,20 = 0,30', lerCentavos("0,10") + lerCentavos("0,20"), lerCentavos("0,30"));
 
+    // ---- mascararCentavos: vírgula flutuante ----
+    testar('máscara: "1" → 0,01', mascararCentavos("1").texto, "0,01");
+    testar('máscara: "17" → 0,17', mascararCentavos("17").texto, "0,17");
+    testar('máscara: "171" → 1,71', mascararCentavos("171").texto, "1,71");
+    testar('máscara: "171150" → 1.711,50', mascararCentavos("171150").texto, "1.711,50");
+    testar('máscara: centavos de "171150"', mascararCentavos("171150").centavos, 171150);
+    testar('máscara: digitar 0 depois de "1.711,5" → 1.711,50', mascararCentavos("1.711,50").texto, "1.711,50");
+    testar('máscara: apagar o último dígito de "1.711,50"', mascararCentavos("1.711,5").texto, "171,15");
+    testar('máscara: vírgula digitada é ignorada', mascararCentavos("12,").texto, "0,12");
+    testar('máscara: letras são ignoradas', mascararCentavos("5a0").texto, "0,50");
+    testar('máscara: zeros à esquerda', mascararCentavos("0,05").texto, "0,05");
+    testar('máscara: só zero', mascararCentavos("0").centavos, 0);
+    testar('máscara: vazio', mascararCentavos("").centavos, null);
+    testar('máscara: só separadores', mascararCentavos(",.").centavos, null);
+    testar('máscara: limite de 11 dígitos', mascararCentavos("1234567890123").texto, "123.456.789,01");
+
     // ---- formatarCentavos ----
     testar('formatarCentavos(0)', formatarCentavos(0), "0,00");
     testar('formatarCentavos(5)', formatarCentavos(5), "0,05");

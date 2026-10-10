@@ -22,7 +22,8 @@ Tudo é salvo automaticamente **neste navegador**. Para usar em outro aparelho, 
 - **Saldo total** = gaveta + banco.
 - O saldo anterior vem sozinho do último dia preenchido. Se você contou a gaveta, vale o valor contado. Corrigir um dia antigo corrige os dias seguintes.
 - **Meta por dia** = (meta da temporada − saldo inicial) ÷ dias de trabalho.
-- Valores aceitam vírgula ou ponto nos centavos (`12,50` ou `12.50`) e são guardados em centavos inteiros, sem erro de arredondamento.
+- **Vírgula flutuante**, como na maquininha: digite só os números e a vírgula se ajusta sozinha (`1` → `0,01`, `1250` → `12,50`, `171150` → `1.711,50`). Para R$ 800,00, digite `80000`. Ao colar um valor (`12,50`, `12.50`, `1.000`), o app entende o valor escrito.
+- Os valores são guardados em centavos inteiros, sem erro de arredondamento.
 
 ## Estrutura
 

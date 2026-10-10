@@ -68,7 +68,7 @@ function htmlCampoValor(id, campo) {
   return `
     <div class="campo-valor">
       <span>R$</span>
-      <input id="${id}" data-campo="${campo}" inputmode="decimal" autocomplete="off" placeholder="0,00" />
+      <input id="${id}" data-campo="${campo}" inputmode="numeric" autocomplete="off" placeholder="0,00" />
       <button type="button" class="limpar-campo" aria-label="Limpar valor" hidden>✕</button>
     </div>
     <p class="erro-campo" hidden></p>`;
@@ -211,17 +211,37 @@ function mostrarValor(input, centavos) {
   marcarValidade(input);
 }
 
-function aoDigitarValor(input) {
-  const valor = marcarValidade(input);
-  if (valor === null) return; // inválido: não salva, mantém o último valor bom
-  aplicarCampo(input.dataset.campo, input.value.trim() === "" ? null : valor);
+/**
+ * Vírgula flutuante: a cada tecla, refaz o valor só com os dígitos
+ * ("171150" → "1.711,50") e deixa o cursor no fim.
+ */
+function aoDigitarValor(input, ev) {
+  const mascara = mascararCentavos(input.value);
+  let valor = mascara.centavos;
+  // Apagando até zerar ("0,01" → "0,00"), o campo fica vazio.
+  if (valor === 0 && ev && ev.inputType && ev.inputType.startsWith("delete")) valor = null;
+  input.value = valor === null ? "" : mascara.texto;
+  if (document.activeElement === input) input.setSelectionRange(input.value.length, input.value.length);
+  marcarValidade(input);
+  aplicarCampo(input.dataset.campo, valor);
   atualizarTela();
 }
 
 function ligarCamposDeValor() {
   document.addEventListener("input", (ev) => {
     const el = ev.target;
-    if (el.matches("input[data-campo]")) aoDigitarValor(el);
+    if (el.matches("input[data-campo]")) aoDigitarValor(el, ev);
+  });
+
+  // Colar "12,50", "12.50" ou "1.000" entende o valor escrito, não só os dígitos.
+  document.addEventListener("paste", (ev) => {
+    const el = ev.target;
+    if (!el.matches("input[data-campo]")) return;
+    const valor = lerCentavos(ev.clipboardData.getData("text"));
+    if (valor === null) return; // deixa a máscara usar os dígitos
+    ev.preventDefault();
+    el.value = formatarCentavos(valor);
+    aoDigitarValor(el);
   });
 
   document.addEventListener("focusout", (ev) => {

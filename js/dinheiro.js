@@ -40,6 +40,22 @@ function lerCentavos(texto) {
   return reais * 100 + centavos;
 }
 
+/** Até 999.999.999,99: mais que isso o campo para de aceitar dígitos. */
+const MAX_DIGITOS = 11;
+
+/**
+ * Vírgula flutuante (como na maquininha): usa só os dígitos digitados,
+ * e os dois últimos são sempre os centavos.
+ *   "1" → 0,01   "17" → 0,17   "171150" → 1.711,50
+ * Ponto, vírgula e letras são ignorados. Sem dígitos devolve { centavos: null, texto: "" }.
+ */
+function mascararCentavos(texto) {
+  const digitos = String(texto ?? "").replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, MAX_DIGITOS);
+  if (digitos === "") return { centavos: null, texto: "" };
+  const centavos = Number(digitos);
+  return { centavos, texto: formatarCentavos(centavos) };
+}
+
 /** Formata centavos como "1.234,56" (sem o "R$"). */
 function formatarCentavos(centavos) {
   const negativo = centavos < 0;
