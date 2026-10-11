@@ -386,7 +386,13 @@ function ligarAcoes() {
 
   $("imprimir").addEventListener("click", () => window.print());
 
-  $("exportar").addEventListener("click", () => baixarBackup(dados));
+  const fazerBackup = () => {
+    baixarBackup(dados);
+    marcarBackupFeito();
+    atualizarLembreteBackup();
+  };
+  $("exportar").addEventListener("click", fazerBackup);
+  $("backupAgora").addEventListener("click", fazerBackup);
 
   $("importar").addEventListener("click", () => $("arquivoBackup").click());
   $("arquivoBackup").addEventListener("change", async (ev) => {
@@ -402,6 +408,7 @@ function ligarAcoes() {
       salvar();
       preencherTemporada();
       preencherDia();
+      atualizarLembreteBackup();
     } catch (erro) {
       alert(erro.message);
     }
@@ -561,6 +568,31 @@ function atualizarMeta(r) {
 // Início
 // ---------------------------------------------------------------------------
 
+// Lembrete de backup
+const DIAS_PARA_LEMBRAR_BACKUP = 7;
+
+function atualizarLembreteBackup() {
+  const ultimo = lerUltimoBackup();
+  const diasRegistrados = datasSalvas(dados).length;
+  let dias = null;
+  if (ultimo) {
+    const meiaNoite = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    dias = Math.round((meiaNoite(new Date()) - meiaNoite(new Date(ultimo))) / 86400000);
+  }
+
+  const quando = dias === null ? null : dias <= 0 ? "hoje" : dias === 1 ? "ontem" : `há ${dias} dias`;
+  const atrasado = dias === null ? diasRegistrados >= 3 : dias >= DIAS_PARA_LEMBRAR_BACKUP;
+
+  const rodape = $("ultimoBackup");
+  rodape.textContent = quando ? `Último backup: ${quando}.` : "Nenhum backup feito ainda.";
+  rodape.classList.toggle("atrasado", atrasado);
+
+  $("avisoBackup").hidden = !atrasado;
+  $("avisoBackupTexto").textContent = quando
+    ? `Seu último backup foi ${quando}. Faça um novo para não perder seus registros.`
+    : `Você já tem ${diasRegistrados} dias registrados e nenhum backup. Faça um para não perder seus registros.`;
+}
+
 // Relógio digital no topo
 function atualizarRelogio() {
   const agora = new Date();
@@ -572,6 +604,9 @@ function atualizarRelogio() {
 }
 
 montarLinhas();
+atualizarLembreteBackup();
+// Confere de novo ao voltar para o app (pode ter virado o dia).
+document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizarLembreteBackup(); });
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 ligarCamposDeValor();

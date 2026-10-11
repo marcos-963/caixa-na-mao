@@ -49,6 +49,11 @@
       Não foi possível salvar neste navegador (aba anônima ou sem espaço). Exporte um backup antes de fechar.
     </p>
 
+    <div class="aviso-backup" id="avisoBackup" role="status" hidden>
+      <span id="avisoBackupTexto"></span>
+      <button type="button" class="botao-texto" id="backupAgora">Fazer backup agora</button>
+    </div>
+
     <!-- Resumo do dia -->
     <section class="resumo" aria-label="Resumo do dia">
       <div class="indicador">
@@ -286,7 +291,7 @@
     </section>
     <p class="rodape">
       <span id="estadoSalvo">Tudo é salvo automaticamente neste navegador.</span>
-      Faça um backup de vez em quando.
+      <span id="ultimoBackup"></span>
     </p>
     <footer class="assinatura">
       <strong>Marcus Deleon™</strong> – Tecnologia de Ponta
