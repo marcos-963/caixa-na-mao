@@ -409,7 +409,7 @@ details:not([open]) > summary.cartao-cabecalho { border-bottom: none; }
 .limpar-campo:hover:not(:disabled), .limpar-texto:hover:not(:disabled) { background: var(--negativo-fundo); }
 .limpar-campo:disabled, .limpar-texto:disabled { opacity: .4; cursor: default; border-color: var(--borda); color: var(--texto-suave); }
 
-/* Observações e anotações com ✕ */
+/* Observações e anotações com botão Limpar */
 .texto-com-limpar {
   flex: 1 1 160px;
   min-width: 0;
@@ -418,19 +418,8 @@ details:not([open]) > summary.cartao-cabecalho { border-bottom: none; }
   gap: 4px;
 }
 .texto-com-limpar .descricao { flex: 1; }
-.limpar-texto {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--texto-suave);
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 22px;
-}
+/* Mesmo visual do "Limpar" dos valores; largura automática para o texto caber. */
+.limpar-texto { flex: none; }
 .anotacoes { position: relative; }
 .anotacoes textarea { padding-right: 84px; }
 .anotacoes .limpar-texto { position: absolute; top: 10px; right: 12px; }
