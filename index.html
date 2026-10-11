@@ -290,6 +290,51 @@
       </div>
     </div>
 
+    <!-- Resumo da semana e do mês -->
+    <section class="cartao" id="cartaoPeriodo" aria-labelledby="tituloPeriodo">
+      <details id="painelPeriodo">
+        <summary class="cartao-cabecalho">
+          <h2 id="tituloPeriodo">Resumo da semana e do mês</h2>
+          <p>Totais, média por dia e quanto falta para a meta</p>
+        </summary>
+        <div class="periodo">
+          <div class="periodo-topo">
+            <div class="alternador" role="radiogroup" aria-label="Período">
+              <label><input type="radio" name="periodo" value="semana" checked /><span>Semana</span></label>
+              <label><input type="radio" name="periodo" value="mes" /><span>Mês</span></label>
+            </div>
+            <strong class="periodo-nome" id="periodoNome"></strong>
+          </div>
+
+          <div class="periodo-numeros">
+            <div><span>Entradas</span><strong id="perEntradas">R$ 0,00</strong></div>
+            <div><span>Saídas</span><strong id="perSaidas">R$ 0,00</strong></div>
+            <div class="destaque-periodo"><span>Resultado</span><strong id="perResultado">R$ 0,00</strong></div>
+            <div><span>Dias registrados</span><strong id="perDias">0</strong></div>
+            <div><span>Média por dia</span><strong id="perMedia">—</strong></div>
+            <div><span>Melhor dia</span><strong id="perMelhor">—</strong></div>
+          </div>
+
+          <p class="periodo-vazio" id="periodoVazio" hidden>Nenhum dia registrado neste período.</p>
+          <table class="periodo-dias" id="periodoTabela">
+            <thead>
+              <tr>
+                <th scope="col">Dia</th>
+                <th scope="col" class="col-extra">Entradas</th>
+                <th scope="col" class="col-extra">Saídas</th>
+                <th scope="col">Resultado</th>
+                <th scope="col">Gaveta</th>
+              </tr>
+            </thead>
+            <tbody id="periodoLinhas"></tbody>
+          </table>
+          <p class="periodo-dica">Toque num dia para abrir.</p>
+
+          <p class="periodo-meta" id="periodoMeta" hidden></p>
+        </div>
+      </details>
+    </section>
+
     <!-- Ações -->
     <section class="acoes" aria-label="Ações">
       <button type="button" class="botao primario" id="imprimir">Imprimir / PDF</button>

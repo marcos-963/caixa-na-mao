@@ -167,6 +167,39 @@ function calcularData(dados, data) {
   return { anterior, origemAnterior: origem, resultado: calcularDia(paraCalculo(lerDia(dados, data), anterior)) };
 }
 
+/**
+ * Resumo dos dias registrados entre duas datas (inclusive).
+ * Devolve { dias: [{ data, entradas, saidas, resultado, conferencia, diferenca }],
+ *           totalEntradas, totalSaidas, resultado, media, melhor }.
+ * media e melhor são null quando não há dias.
+ */
+function resumirPeriodo(dados, inicio, fim) {
+  const temporada = calcularTemporada(dados);
+  const dias = datasSalvas(dados)
+    .filter((d) => d >= inicio && d <= fim)
+    .map((data) => {
+      const r = temporada[data].resultado;
+      return {
+        data,
+        entradas: r.totalEntradas,
+        saidas: r.totalSaidas,
+        resultado: r.resultadoDia,
+        conferencia: r.conferencia,
+        diferenca: r.diferenca,
+      };
+    });
+  const soma = (campo) => dias.reduce((t, d) => t + d[campo], 0);
+  const resultado = soma("resultado");
+  return {
+    dias,
+    totalEntradas: soma("entradas"),
+    totalSaidas: soma("saidas"),
+    resultado,
+    media: dias.length ? Math.round(resultado / dias.length) : null,
+    melhor: dias.length ? dias.reduce((m, d) => (d.resultado > m.resultado ? d : m)) : null,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Backup
 // ---------------------------------------------------------------------------
