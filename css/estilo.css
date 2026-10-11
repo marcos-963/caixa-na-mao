@@ -669,6 +669,8 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
 .botao:hover { background: var(--petroleo-50); }
 .botao.primario { background: var(--petroleo-700); border-color: var(--petroleo-700); color: #fff; }
 .botao.primario:hover { background: var(--petroleo-600); }
+.botao.whatsapp { color: var(--positivo); border-color: #a9d8bd; }
+.botao.whatsapp:hover { background: var(--positivo-fundo); }
 .botao.perigo { color: var(--negativo); border-color: #eec4bf; }
 .botao.perigo:hover { background: var(--negativo-fundo); }
 
