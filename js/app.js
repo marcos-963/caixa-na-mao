@@ -475,6 +475,7 @@ function ligarAcoes() {
   });
 
   $("imprimir").addEventListener("click", () => window.print());
+  $("enviarWhatsapp").addEventListener("click", enviarFechamento);
 
   const fazerBackup = () => {
     baixarBackup(dados);
@@ -655,6 +656,62 @@ function atualizarMeta(r) {
   $("metaBarra").style.width = Math.min(100, pctDia) + "%";
   caixa.querySelector(".meta-barra").setAttribute("aria-valuenow", String(Math.min(100, pctDia)));
   caixa.classList.toggle("alcancada", pctDia >= 100);
+}
+
+// ---------------------------------------------------------------------------
+// Fechamento pelo WhatsApp
+// ---------------------------------------------------------------------------
+
+/** Texto do fechamento do dia, com *negrito* do WhatsApp. */
+function montarTextoFechamento() {
+  const dia = lerDia(dados, dataAtual);
+  const { anterior, resultado: r } = calcularData(dados, dataAtual);
+  const data = deISO(dataAtual);
+  const linhas = [`*Caixa na Mão · ${DIAS_SEMANA[data.getDay()]}, ${data.toLocaleDateString("pt-BR")}*`, ""];
+
+  linhas.push(`*Entradas: ${moeda(r.totalEntradas)}*`);
+  for (const e of ENTRADAS) {
+    if (dia.entradas[e.tipo]) linhas.push(`• ${e.rotulo}: ${moeda(dia.entradas[e.tipo])}`);
+  }
+  linhas.push("", `*Saídas: ${moeda(r.totalSaidas)}*`);
+  for (const s of SAIDAS) {
+    const saida = dia.saidas[s.tipo];
+    if (saida && saida.valor) linhas.push(`• ${s.rotulo}: ${moeda(saida.valor)} (${saida.pagoCom})`);
+  }
+
+  linhas.push("", `*Resultado do dia: ${moeda(r.resultadoDia)}*`);
+  if (!$("metaDia").hidden) linhas.push(`Meta do dia: ${$("metaValor").textContent} (${$("metaPercentual").textContent})`);
+
+  const conferencia = {
+    bateu: "✓ bateu",
+    sobrou: `sobrou ${moeda(r.diferenca)}`,
+    faltou: `faltou ${moeda(-r.diferenca)}`,
+    "nao-conferido": "não conferida",
+  }[r.conferencia];
+  linhas.push(
+    "",
+    `Saldo anterior: ${moeda(anterior.gaveta + anterior.banco)}`,
+    `Na gaveta: ${moeda(r.saldoFinal.gaveta)} (${conferencia})`,
+    `No banco: ${moeda(r.saldoFinal.banco)}`,
+    `*Saldo total: ${moeda(r.saldoAcumulado)}*`,
+  );
+  if (dia.anotacoes.trim()) linhas.push("", `Anotações: ${dia.anotacoes.trim()}`);
+  return linhas.join("\n");
+}
+
+/** No celular abre a janela de compartilhar; no computador, o WhatsApp Web. */
+async function enviarFechamento() {
+  const texto = montarTextoFechamento();
+  const celular = window.matchMedia("(pointer: coarse)").matches;
+  if (celular && navigator.share) {
+    try {
+      await navigator.share({ text: texto });
+      return;
+    } catch (erro) {
+      if (erro.name === "AbortError") return; // a pessoa desistiu
+    }
+  }
+  window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank", "noopener");
 }
 
 // ---------------------------------------------------------------------------
