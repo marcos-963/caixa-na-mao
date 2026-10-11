@@ -637,9 +637,36 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
   .colunas { grid-template-columns: 1fr 1fr; align-items: start; }
 }
 
-@media (max-width: 420px) {
+/* Celular: relógio embaixo do nome, no lugar do subtítulo */
+@media (max-width: 640px) {
+  .topo-conteudo {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "simbolo titulo"
+      "simbolo relogio"
+      "datas   datas";
+    column-gap: 10px;
+    row-gap: 0;
+  }
+  .marca { display: contents; }
+  .marca-simbolo { grid-area: simbolo; align-self: center; }
+  .marca > div { grid-area: titulo; align-self: end; }
   .marca p { display: none; }
-  .relogio { font-size: 18px; padding: 2px 8px; }
+  .relogio {
+    grid-area: relogio;
+    justify-self: start;
+    align-self: start;
+    font-size: 16px;
+    padding: 0;
+    background: none;
+    border: none;
+  }
+  .relogio-segundos { font-size: 12px; }
+  .navegacao-data { grid-area: datas; margin-top: 8px; }
+}
+
+@media (max-width: 420px) {
   .navegacao-data { width: 100%; }
   .seletor-data { flex: 1; justify-content: center; }
   .campo-duplo { grid-template-columns: 1fr; }
