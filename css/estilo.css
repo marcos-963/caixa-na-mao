@@ -509,6 +509,21 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
   font-size: 13px;
 }
 
+.botao-bateu {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 10px 16px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--positivo);
+  background: var(--superficie);
+  color: var(--positivo);
+  font-weight: 700;
+  font-size: 14px;
+}
+.botao-bateu:hover { background: var(--positivo-fundo); }
+.botao-bateu[hidden] { display: none; }
+
 .conferencia {
   margin: 12px 16px 16px;
   padding: 10px 12px;
@@ -686,7 +701,7 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
   }
 
   /* Só o que interessa no papel */
-  .botao-icone, #irParaHoje, .relogio, .acoes, .rodape, .limpar-campo, .limpar-texto,
+  .botao-icone, #irParaHoje, .relogio, .botao-bateu, .acoes, .rodape, .limpar-campo, .limpar-texto,
   .anterior-manual, .dica-anterior, .aviso-armazenamento, .erro-campo,
   #cartaoTemporada, .linha.vazia, .texto-com-limpar.vazio,
   .linha-rotulo small, .alternador input:not(:checked) + span { display: none !important; }

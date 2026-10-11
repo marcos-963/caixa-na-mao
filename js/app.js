@@ -376,6 +376,14 @@ function ligarNavegacao() {
 // ---------------------------------------------------------------------------
 
 function ligarAcoes() {
+  // Conferiu e bateu: preenche o contado com o que deveria ter na gaveta.
+  $("caixaBateu").addEventListener("click", () => {
+    const esperado = calcularData(dados, dataAtual).resultado.gavetaEsperada;
+    mostrarValor($("contado"), esperado);
+    aplicarCampo("contado", esperado);
+    atualizarTela();
+  });
+
   $("imprimir").addEventListener("click", () => window.print());
 
   $("exportar").addEventListener("click", () => baixarBackup(dados));
@@ -492,6 +500,11 @@ function atualizarTela() {
     : `Veio do dia ${dataCurta(origemAnterior)}`;
   $("avisoAnteriorManual").hidden = origemAnterior !== "manual";
   $("dicaPrimeiroDia").hidden = origemAnterior !== "inicio-temporada";
+
+  // "Bateu" só aparece antes de contar, para não esconder uma diferença já anotada.
+  const bateu = $("caixaBateu");
+  bateu.hidden = r.conferencia !== "nao-conferido" || r.gavetaEsperada < 0;
+  bateu.textContent = `✓ Bateu, tem ${moeda(r.gavetaEsperada)} na gaveta`;
 
   const conf = $("conferencia");
   conf.dataset.estado = r.conferencia;
