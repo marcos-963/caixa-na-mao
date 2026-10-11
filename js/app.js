@@ -120,6 +120,14 @@ function montarLinhas() {
       </div>
     </div>`).join("");
 
+  $("gradeCedulas").innerHTML = VALORES_CEDULAS.map((v) => `
+    <label class="cedula-rotulo" for="ced-${v}">R$ ${v / 100}</label>
+    <input class="cedula-qtd" id="ced-${v}" data-cedula="${v}" inputmode="numeric" autocomplete="off"
+           maxlength="5" placeholder="0" aria-label="Quantas notas de R$ ${v / 100}" />
+    <span class="cedula-subtotal" id="sub-${v}">R$ 0,00</span>`).join("") + `
+    <label class="cedula-rotulo" for="ced-moedas">Moedas</label>
+    <div class="moedas">${htmlCampoValor("ced-moedas", "cedulas.moedas")}</div>`;
+
   $("listaFolgas").innerHTML = ORDEM_FOLGAS.map((d) => `
     <label class="folga">
       <input type="checkbox" value="${d}" />
@@ -173,7 +181,13 @@ function aplicarCampo(campo, valor) {
       if (valor === null) delete dia.saidas[chave];
       else dia.saidas[chave] = { valor, pagoCom: pagoComSelecionado(chave) };
     } else if (grupo === "contado") {
+      // Digitou (ou tocou em "Bateu"): a contagem por cédulas deixa de valer.
       dia.contado = valor;
+      dia.cedulas = {};
+    } else if (grupo === "cedulas") {
+      dia.cedulas = { ...dia.cedulas };
+      if (valor) dia.cedulas.moedas = valor; else delete dia.cedulas.moedas;
+      dia.contado = totalCedulas(dia.cedulas) || null;
     } else if (grupo === "anterior" && !dia.anteriorManual
                && saldoAnteriorDe(dados, dataAtual).origem === "inicio-temporada") {
       // Primeiro dia: o saldo anterior é o saldo inicial da temporada,
@@ -245,13 +259,59 @@ function aoDigitarValor(input, ev) {
   if (document.activeElement === input) input.setSelectionRange(input.value.length, input.value.length);
   marcarValidade(input);
   aplicarCampo(input.dataset.campo, valor);
+  if (input.dataset.campo === "contado") preencherCedulas();
+  if (input.dataset.campo === "cedulas.moedas") aposContarCedulas();
   atualizarTela();
+}
+
+// ---------------------------------------------------------------------------
+// Contar por cédulas
+// ---------------------------------------------------------------------------
+
+function aoDigitarCedula(input) {
+  input.value = input.value.replace(/\D/g, "").slice(0, 5);
+  const qtd = Number(input.value) || 0;
+  alterarDia((dia) => {
+    dia.cedulas = { ...dia.cedulas };
+    if (qtd > 0) dia.cedulas[input.dataset.cedula] = qtd;
+    else delete dia.cedulas[input.dataset.cedula];
+    dia.contado = totalCedulas(dia.cedulas) || null;
+  });
+  aposContarCedulas();
+  atualizarTela();
+}
+
+/** Atualiza subtotais, total e o campo "Quanto tem de verdade" depois de mexer nas cédulas. */
+function aposContarCedulas() {
+  const dia = lerDia(dados, dataAtual);
+  mostrarValor($("contado"), dia.contado);
+  mostrarSubtotaisCedulas(dia.cedulas);
+}
+
+function mostrarSubtotaisCedulas(cedulas) {
+  for (const v of VALORES_CEDULAS) {
+    const qtd = cedulas[v] || 0;
+    const sub = $(`sub-${v}`);
+    sub.textContent = moeda(qtd * v);
+    sub.classList.toggle("preenchido", qtd > 0);
+  }
+  $("totalCedulas").textContent = moeda(totalCedulas(cedulas));
+}
+
+/** Mostra a contagem salva do dia (ou campos vazios). */
+function preencherCedulas() {
+  const { cedulas } = lerDia(dados, dataAtual);
+  for (const v of VALORES_CEDULAS) $(`ced-${v}`).value = cedulas[v] ? String(cedulas[v]) : "";
+  mostrarValor($("ced-moedas"), cedulas.moedas ?? null);
+  mostrarSubtotaisCedulas(cedulas);
+  if (totalCedulas(cedulas) > 0) $("painelCedulas").open = true;
 }
 
 function ligarCamposDeValor() {
   document.addEventListener("input", (ev) => {
     const el = ev.target;
     if (el.matches("input[data-campo]")) aoDigitarValor(el, ev);
+    else if (el.matches("input[data-cedula]")) aoDigitarCedula(el);
   });
 
   // Colar "12,50", "12.50" ou "1.000" entende o valor escrito, não só os dígitos.
@@ -274,6 +334,13 @@ function ligarCamposDeValor() {
 
   document.addEventListener("keydown", (ev) => {
     const el = ev.target;
+    if (ev.key === "Enter" && el.matches("input[data-cedula]")) {
+      // Enter passa para a próxima nota (e por fim para as moedas).
+      ev.preventDefault();
+      const campos = [...document.querySelectorAll("input[data-cedula], #ced-moedas")];
+      campos[campos.indexOf(el) + 1].focus();
+      return;
+    }
     if (ev.key !== "Enter" || !el.matches("input[data-campo]")) return;
     ev.preventDefault();
     const campos = [...document.querySelectorAll("input[data-campo]")].filter((c) => c.offsetParent !== null);
@@ -381,6 +448,7 @@ function ligarAcoes() {
     const esperado = calcularData(dados, dataAtual).resultado.gavetaEsperada;
     mostrarValor($("contado"), esperado);
     aplicarCampo("contado", esperado);
+    preencherCedulas();
     atualizarTela();
   });
 
@@ -449,6 +517,8 @@ function preencherDia() {
   atualizarBotoesTexto();
 
   mostrarValor($("contado"), dia.contado);
+  $("painelCedulas").open = false;
+  preencherCedulas();
   preencherAnterior();
 
   atualizarTela();
