@@ -67,13 +67,14 @@ function moeda(centavos) {
 // Montagem das linhas de entradas e saídas
 // ---------------------------------------------------------------------------
 
-function htmlCampoValor(id, campo) {
+function htmlCampoValor(id, campo, somar = false) {
   return `
     <div class="valor-com-limpar">
       <div class="campo-valor">
         <span>R$</span>
-        <input id="${id}" data-campo="${campo}" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+        <input id="${id}" data-campo="${campo}" ${somar ? "data-soma" : ""} inputmode="numeric" autocomplete="off" placeholder="0,00" />
       </div>
+      ${somar ? `<button type="button" class="somar-campo" aria-label="Somar outro valor" title="Somar outro valor">+</button>` : ""}
       <button type="button" class="limpar-campo" aria-label="Limpar valor">Limpar</button>
     </div>
     <p class="erro-campo" hidden></p>`;
@@ -94,7 +95,7 @@ function montarLinhas() {
         <label for="ent-${e.tipo}">${e.rotulo}</label>
         <small>${e.dica}</small>
       </div>
-      ${htmlCampoValor(`ent-${e.tipo}`, `entrada.${e.tipo}`)}
+      ${htmlCampoValor(`ent-${e.tipo}`, `entrada.${e.tipo}`, true)}
       <div class="linha-extra">
         <span class="texto-com-limpar">
           <input class="descricao" data-desc="entrada.${e.tipo}" maxlength="200" placeholder="Observação (opcional)" aria-label="Observação: ${e.rotulo}" />
@@ -110,7 +111,7 @@ function montarLinhas() {
         <label for="sai-${s.tipo}">${s.rotulo}</label>
         <small>${s.dica}</small>
       </div>
-      ${htmlCampoValor(`sai-${s.tipo}`, `saida.${s.tipo}`)}
+      ${htmlCampoValor(`sai-${s.tipo}`, `saida.${s.tipo}`, true)}
       <div class="linha-extra">
         <span class="texto-com-limpar">
           <input class="descricao" data-desc="saida.${s.tipo}" maxlength="200" placeholder="Observação (opcional)" aria-label="Observação: ${s.rotulo}" />
@@ -226,7 +227,7 @@ function partesDoCampo(input) {
 
 function marcarValidade(input) {
   const { caixa, limpar, erro } = partesDoCampo(input);
-  const valor = lerCentavos(input.value);
+  const valor = lerSoma(input.value);
   const valido = valor !== null;
   caixa.classList.toggle("invalido", !valido);
   input.setAttribute("aria-invalid", String(!valido));
@@ -235,6 +236,8 @@ function marcarValidade(input) {
     erro.textContent = valido ? "" : MSG_INVALIDO;
   }
   limpar.disabled = input.value === "";
+  const somar = limpar.parentElement.querySelector(".somar-campo");
+  if (somar) somar.disabled = input.value === "";
   const linha = input.closest(".linha");
   if (linha) linha.classList.toggle("vazia", input.value === "");
   return valor;
@@ -250,10 +253,12 @@ function mostrarValor(input, centavos) {
  * ("171150" → "1.711,50") e deixa o cursor no fim.
  */
 function aoDigitarValor(input, ev) {
-  const mascara = mascararCentavos(input.value);
+  const apagando = Boolean(ev && ev.inputType && ev.inputType.startsWith("delete"));
+  const ehSoma = "soma" in input.dataset && input.value.includes("+");
+  const mascara = "soma" in input.dataset ? mascararSoma(input.value, apagando) : mascararCentavos(input.value);
   let valor = mascara.centavos;
   // Apagando até zerar ("0,01" → "0,00"), o campo fica vazio.
-  if (valor === 0 && ev && ev.inputType && ev.inputType.startsWith("delete")) valor = null;
+  if (valor === 0 && apagando && !ehSoma) valor = null;
   const ehAnterior = input.dataset.campo.startsWith("anterior.");
   input.value = valor === null ? (ehAnterior ? "0,00" : "") : mascara.texto;
   if (document.activeElement === input) input.setSelectionRange(input.value.length, input.value.length);
@@ -318,7 +323,7 @@ function ligarCamposDeValor() {
   document.addEventListener("paste", (ev) => {
     const el = ev.target;
     if (!el.matches("input[data-campo]")) return;
-    const valor = lerCentavos(ev.clipboardData.getData("text"));
+    const valor = lerSoma(ev.clipboardData.getData("text"));
     if (valor === null) return; // deixa a máscara usar os dígitos
     ev.preventDefault();
     el.value = formatarCentavos(valor);
@@ -328,7 +333,8 @@ function ligarCamposDeValor() {
   document.addEventListener("focusout", (ev) => {
     const el = ev.target;
     if (!el.matches("input[data-campo]") || el.value.trim() === "") return;
-    const valor = lerCentavos(el.value);
+    // Ao sair do campo, "50,00 + 30,00" vira "80,00".
+    const valor = lerSoma(el.value);
     if (valor !== null) mostrarValor(el, valor);
   });
 
@@ -348,6 +354,11 @@ function ligarCamposDeValor() {
     if (proximo) proximo.focus(); else el.blur();
   });
 
+  // O "+" não tira o foco do campo (no celular, o teclado continua aberto).
+  document.addEventListener("pointerdown", (ev) => {
+    if (ev.target.closest(".somar-campo")) ev.preventDefault();
+  });
+
   document.addEventListener("click", (ev) => {
     const botaoTexto = ev.target.closest(".limpar-texto");
     if (botaoTexto) {
@@ -355,6 +366,17 @@ function ligarCamposDeValor() {
       campo.value = "";
       campo.dispatchEvent(new Event("input", { bubbles: true }));
       campo.focus();
+      return;
+    }
+    const somar = ev.target.closest(".somar-campo");
+    if (somar) {
+      const input = somar.closest(".valor-com-limpar").querySelector("input");
+      if (input.value.trim() && !/\+\s*$/.test(input.value)) {
+        input.value += " +";
+        aoDigitarValor(input);
+      }
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
       return;
     }
     const botao = ev.target.closest(".limpar-campo");

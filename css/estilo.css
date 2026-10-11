@@ -325,7 +325,7 @@ details:not([open]) > summary.cartao-cabecalho { border-bottom: none; }
 .linha-rotulo label { font-weight: 650; display: block; }
 .linha-rotulo small { color: var(--texto-suave); font-size: 12px; }
 
-.linha .valor-com-limpar { align-self: start; width: 210px; }
+.linha .valor-com-limpar { align-self: start; width: 240px; }
 .linha .erro-campo { grid-column: 1 / -1; }
 
 .linha-extra {
@@ -423,6 +423,21 @@ details:not([open]) > summary.cartao-cabecalho { border-bottom: none; }
 .valor-com-limpar .campo-valor { flex: 1; }
 
 .limpar-campo, .limpar-texto { padding: 3px 8px; font-size: 11px; }
+.somar-campo {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--petroleo-200);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--petroleo-700);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+.somar-campo:hover:not(:disabled) { background: var(--petroleo-50); }
+.somar-campo:disabled { opacity: .4; cursor: default; }
 .limpar-campo:hover:not(:disabled), .limpar-texto:hover:not(:disabled) { background: var(--negativo-fundo); }
 .limpar-campo:disabled, .limpar-texto:disabled { opacity: .4; cursor: default; border-color: var(--borda); color: var(--texto-suave); }
 
@@ -754,7 +769,7 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
   }
 
   /* Só o que interessa no papel */
-  .botao-icone, #irParaHoje, .relogio, .botao-bateu, .cedulas, .acoes, .rodape, .limpar-campo, .limpar-texto,
+  .botao-icone, #irParaHoje, .relogio, .botao-bateu, .cedulas, .acoes, .rodape, .limpar-campo, .limpar-texto, .somar-campo,
   .anterior-manual, .dica-anterior, .aviso-armazenamento, .aviso-backup, .erro-campo,
   #cartaoTemporada, .linha.vazia, .texto-com-limpar.vazio,
   .linha-rotulo small, .alternador input:not(:checked) + span { display: none !important; }
