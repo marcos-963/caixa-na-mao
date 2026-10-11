@@ -21,6 +21,7 @@
  *         saidas: { materiais: { valor, pagoCom: "gaveta" | "banco" }, ... },
  *         descricoes: { "entrada.dinheiro": "texto", "saida.materiais": "texto", ... },
  *         contado: 42000 | null,              // dinheiro contado na gaveta
+ *         cedulas: { "5000": 3, "1000": 7, moedas: 350 }, // contagem por notas (opcional)
  *         anteriorManual: { gaveta, banco } | null, // saldo anterior digitado à mão
  *         anotacoes: "texto"
  *       }
@@ -50,6 +51,7 @@ function diaVazio() {
     saidas: {},
     descricoes: {},
     contado: null,
+    cedulas: {},
     anteriorManual: null,
     anotacoes: "",
   };
@@ -264,6 +266,11 @@ function validarDados(bruto) {
       if (/^(entrada|saida)\.[a-z]+$/.test(campo)) dia.descricoes[campo] = _valTexto(valor, 200);
     }
     dia.contado = _valCentavosOuNull(d.contado);
+    const c = d.cedulas || {};
+    for (const valor of VALORES_CEDULAS) {
+      if (Number.isInteger(c[valor]) && c[valor] > 0 && c[valor] <= 99999) dia.cedulas[valor] = c[valor];
+    }
+    if (_valCentavos(c.moedas) > 0) dia.cedulas.moedas = c.moedas;
     dia.anteriorManual = d.anteriorManual ? _valSaldo(d.anteriorManual) : null;
     dia.anotacoes = _valTexto(d.anotacoes);
     dados.dias[data] = dia;

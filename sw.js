@@ -9,7 +9,7 @@
  * Ao mudar os arquivos do app, aumente a VERSAO para limpar o cache antigo.
  */
 
-const VERSAO = "caixa-na-mao-v7";
+const VERSAO = "caixa-na-mao-v8";
 
 const ARQUIVOS = [
   "./",

@@ -114,3 +114,19 @@ function contarDiasDeTrabalho(inicio, fim, folgas = []) {
   }
   return dias;
 }
+
+/** Notas aceitas na contagem da gaveta, em centavos (R$ 200 ... R$ 2). */
+const VALORES_CEDULAS = [20000, 10000, 5000, 2000, 1000, 500, 200];
+
+/**
+ * Soma da contagem por cédulas: { "20000": qtd, ..., moedas: centavos }.
+ * Ignora quantidades inválidas.
+ */
+function totalCedulas(cedulas = {}) {
+  let total = Number.isSafeInteger(cedulas.moedas) && cedulas.moedas > 0 ? cedulas.moedas : 0;
+  for (const valor of VALORES_CEDULAS) {
+    const qtd = cedulas[valor];
+    if (Number.isSafeInteger(qtd) && qtd > 0) total += qtd * valor;
+  }
+  return total;
+}

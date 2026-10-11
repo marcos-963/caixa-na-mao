@@ -194,6 +194,17 @@
     testar('backup: data inválida é descartada', Object.keys(sujo.dias).join(","), "2026-12-01");
     testar('nome do backup', nomeDoBackup(new Date(2026, 11, 1)), "caixa-na-mao-backup-2026-12-01.json");
 
+    // ---- Contar por cédulas ----
+    testar('cédulas: vazio dá 0', totalCedulas({}), 0);
+    testar('cédulas: 3×R$50 + 7×R$10 + R$3,50 em moedas', totalCedulas({ 5000: 3, 1000: 7, moedas: 350 }), 22350);
+    testar('cédulas: quantidade inválida é ignorada', totalCedulas({ 10000: -2, 2000: 1.5, 200: 4 }), 800);
+    const comCedulas = lerBackup(JSON.stringify({
+      app: "caixa-na-mao", versao: 1,
+      dias: { "2026-12-01": { contado: 22350, cedulas: { 5000: 3, 1000: 7, moedas: 350, 300: 9, 2000: -1 } } },
+    }));
+    testar('backup: guarda a contagem por cédulas', JSON.stringify(comCedulas.dias["2026-12-01"].cedulas), '{"1000":7,"5000":3,"moedas":350}');
+    testar('backup: dia antigo sem cédulas', JSON.stringify(sujo.dias["2026-12-01"].cedulas), "{}");
+
     // ---- Mostrar ----
     const corpo = document.getElementById("resultados");
     const fmt = (v) => v === null ? "null" : JSON.stringify(v);
