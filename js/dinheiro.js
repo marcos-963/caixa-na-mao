@@ -59,6 +59,46 @@ function mascararCentavos(texto) {
   return { centavos, texto: formatarCentavos(centavos) };
 }
 
+/** Máximo de parcelas numa soma ("50 + 30 + ..."). */
+const MAX_PARCELAS = 50;
+
+/**
+ * Máscara com soma: cada parcela separada por "+" usa a vírgula flutuante.
+ *   "5000 + 3000" → { centavos: 8000, texto: "50,00 + 30,00" }
+ *   "50,00 +"     → { centavos: 5000, texto: "50,00 +" }   (esperando a próxima)
+ * Sem "+" funciona igual a mascararCentavos(). Com apagando = true, uma última
+ * parcela zerada some, para dar para apagar até tirar o "+".
+ */
+function mascararSoma(texto, apagando = false) {
+  const partes = String(texto ?? "").split("+").slice(0, MAX_PARCELAS);
+  if (partes.length === 1) return mascararCentavos(partes[0]);
+
+  let ultima = mascararCentavos(partes[partes.length - 1]);
+  if (apagando && ultima.centavos === 0) ultima = { centavos: null, texto: "" };
+  const anteriores = partes.slice(0, -1).map((p) => mascararCentavos(p)).filter((p) => p.centavos !== null);
+  if (!anteriores.length) return ultima;
+
+  const centavos = anteriores.reduce((soma, p) => soma + p.centavos, 0) + (ultima.centavos || 0);
+  const texto2 = anteriores.map((p) => p.texto).join(" + ") + " +" + (ultima.centavos !== null ? " " + ultima.texto : "");
+  return { centavos, texto: texto2 };
+}
+
+/**
+ * Lê um valor que pode ser uma soma ("50 + 30,50"). Parcela vazia conta 0.
+ * Devolve null se alguma parcela for inválida.
+ */
+function lerSoma(texto) {
+  const partes = String(texto ?? "").split("+");
+  if (partes.length > MAX_PARCELAS) return null;
+  let total = 0;
+  for (const parte of partes) {
+    const valor = lerCentavos(parte);
+    if (valor === null) return null;
+    total += valor;
+  }
+  return total;
+}
+
 /** Formata centavos como "1.234,56" (sem o "R$"). */
 function formatarCentavos(centavos) {
   const negativo = centavos < 0;

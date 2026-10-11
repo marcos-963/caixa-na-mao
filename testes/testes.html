@@ -194,6 +194,19 @@
     testar('backup: data inválida é descartada', Object.keys(sujo.dias).join(","), "2026-12-01");
     testar('nome do backup', nomeDoBackup(new Date(2026, 11, 1)), "caixa-na-mao-backup-2026-12-01.json");
 
+    // ---- Somar no campo ----
+    testar('soma: "5000 + 3000"', mascararSoma("5000 + 3000").texto, "50,00 + 30,00");
+    testar('soma: centavos de "5000 + 3000"', mascararSoma("5000 + 3000").centavos, 8000);
+    testar('soma: "50,00 +" espera a próxima', mascararSoma("50,00 +").texto, "50,00 +");
+    testar('soma: digitar 2 depois do "+"', mascararSoma("50,00 +2").texto, "50,00 + 0,02");
+    testar('soma: sem "+" é a máscara normal', mascararSoma("171150").texto, "1.711,50");
+    testar('soma: apagar a última parcela zerada', mascararSoma("50,00 + 0,0", true).texto, "50,00 +");
+    testar('soma: apagar o "+"', mascararSoma("50,00 ", true).texto, "50,00");
+    testar('soma: "+" no começo é ignorado', mascararSoma("+3000").texto, "30,00");
+    testar('lerSoma("50 + 30,50")', lerSoma("50 + 30,50"), 8050);
+    testar('lerSoma("50,00 +") (parcela vazia conta 0)', lerSoma("50,00 +"), 5000);
+    testar('lerSoma("50 + abc")', lerSoma("50 + abc"), null);
+
     // ---- Contar por cédulas ----
     testar('cédulas: vazio dá 0', totalCedulas({}), 0);
     testar('cédulas: 3×R$50 + 7×R$10 + R$3,50 em moedas', totalCedulas({ 5000: 3, 1000: 7, moedas: 350 }), 22350);
