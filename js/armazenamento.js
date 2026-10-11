@@ -180,6 +180,23 @@ function nomeDoBackup(hoje = new Date()) {
   return `caixa-na-mao-backup-${hoje.getFullYear()}-${p(hoje.getMonth() + 1)}-${p(hoje.getDate())}.json`;
 }
 
+const CHAVE_ULTIMO_BACKUP = "caixa-na-mao-ultimo-backup";
+
+/** Data/hora (ISO) do último backup exportado neste navegador, ou null. */
+function lerUltimoBackup() {
+  try {
+    return localStorage.getItem(CHAVE_ULTIMO_BACKUP);
+  } catch {
+    return null;
+  }
+}
+
+function marcarBackupFeito(quando = new Date()) {
+  try {
+    localStorage.setItem(CHAVE_ULTIMO_BACKUP, quando.toISOString());
+  } catch { /* sem armazenamento: o aviso de cima já avisa */ }
+}
+
 /** Baixa o backup como arquivo .json. */
 function baixarBackup(dados) {
   const blob = new Blob([gerarBackup(dados)], { type: "application/json" });
