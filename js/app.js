@@ -479,7 +479,7 @@ function ligarAcoes() {
 
   const fazerBackup = () => {
     baixarBackup(dados);
-    marcarBackupFeito();
+    if (!MODO_DEMO) marcarBackupFeito();
     atualizarLembreteBackup();
   };
   $("exportar").addEventListener("click", fazerBackup);
@@ -833,6 +833,11 @@ function ligarPeriodo() {
 const DIAS_PARA_LEMBRAR_BACKUP = 7;
 
 function atualizarLembreteBackup() {
+  if (MODO_DEMO) {
+    $("avisoBackup").hidden = true;
+    $("ultimoBackup").textContent = "";
+    return;
+  }
   const ultimo = lerUltimoBackup();
   const diasRegistrados = datasSalvas(dados).length;
   let dias = null;
@@ -878,6 +883,23 @@ ligarPeriodo();
 preencherTemporada();
 preencherDia();
 $("painelTemporada").open = dados.temporada.meta === null && datasSalvas(dados).length === 0;
+
+// Demonstração: a cada visita, recomeça com a semana simulada.
+async function carregarDemo() {
+  $("avisoDemo").hidden = false;
+  document.title = "Caixa na Mão (demonstração)";
+  try {
+    const resposta = await fetch("caixa-na-mao-backup-simulacao-semana.json", { cache: "no-cache" });
+    dados = lerBackup(await resposta.text());
+    salvar();
+    dataAtual = datasSalvas(dados).pop() || dataAtual;
+    preencherTemporada();
+    preencherDia();
+  } catch {
+    $("avisoDemoTexto").textContent = "Não foi possível carregar os dados de demonstração.";
+  }
+}
+if (MODO_DEMO) carregarDemo();
 
 // App instalável e sem internet (só funciona em http/https, não ao abrir o arquivo direto).
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {

@@ -162,6 +162,22 @@ button { cursor: pointer; }
   font-weight: 600;
 }
 
+.aviso-demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: var(--raio);
+  background: var(--petroleo-100);
+  color: var(--petroleo-800);
+  font-weight: 600;
+}
+.aviso-demo[hidden] { display: none; }
+.aviso-demo a { color: var(--petroleo-700); white-space: nowrap; }
+
 .aviso-backup {
   display: flex;
   flex-wrap: wrap;
@@ -853,7 +869,7 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
 
   /* Só o que interessa no papel */
   .botao-icone, #irParaHoje, .relogio, .botao-bateu, .cedulas, .acoes, .rodape, .limpar-campo, .limpar-texto, .somar-campo,
-  .anterior-manual, .dica-anterior, .aviso-armazenamento, .aviso-backup, .erro-campo,
+  .anterior-manual, .dica-anterior, .aviso-armazenamento, .aviso-backup, .aviso-demo, .erro-campo,
   #cartaoTemporada, #cartaoPeriodo, .linha.vazia, .texto-com-limpar.vazio,
   .linha-rotulo small, .alternador input:not(:checked) + span { display: none !important; }
   #cartaoAnotacoes.vazio { display: none; }

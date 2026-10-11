@@ -9,7 +9,7 @@
  * Ao mudar os arquivos do app, aumente a VERSAO para limpar o cache antigo.
  */
 
-const VERSAO = "caixa-na-mao-v11";
+const VERSAO = "caixa-na-mao-v12";
 
 const ARQUIVOS = [
   "./",
@@ -20,6 +20,7 @@ const ARQUIVOS = [
   "./js/armazenamento.js",
   "./js/app.js",
   "./manifest.webmanifest",
+  "./caixa-na-mao-backup-simulacao-semana.json",
   "./icones/icone-192.png",
   "./icones/icone-512.png",
   "./icones/icone-maskable-512.png",
