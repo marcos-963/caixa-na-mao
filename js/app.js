@@ -615,6 +615,7 @@ function atualizarTela() {
   }[r.conferencia];
 
   atualizarMeta(r);
+  atualizarPeriodo();
 }
 
 function atualizarMeta(r) {
@@ -654,6 +655,117 @@ function atualizarMeta(r) {
   $("metaBarra").style.width = Math.min(100, pctDia) + "%";
   caixa.querySelector(".meta-barra").setAttribute("aria-valuenow", String(Math.min(100, pctDia)));
   caixa.classList.toggle("alcancada", pctDia >= 100);
+}
+
+// ---------------------------------------------------------------------------
+// Resumo da semana e do mês
+// ---------------------------------------------------------------------------
+
+const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+/** Semana de segunda a domingo, ou o mês, que contém a data. */
+function limitesDoPeriodo(iso, tipo) {
+  if (tipo === "mes") {
+    const d = deISO(iso);
+    return {
+      inicio: paraISO(new Date(d.getFullYear(), d.getMonth(), 1)),
+      fim: paraISO(new Date(d.getFullYear(), d.getMonth() + 1, 0)),
+      nome: `${MESES[d.getMonth()]} de ${d.getFullYear()}`,
+    };
+  }
+  const recuo = (deISO(iso).getDay() + 6) % 7; // segunda = 0
+  const inicio = somarDias(iso, -recuo);
+  const fim = somarDias(inicio, 6);
+  return { inicio, fim, nome: `Semana de ${dataCurta(inicio)} a ${dataCurta(fim)}` };
+}
+
+function textoGaveta(dia) {
+  if (dia.conferencia === "bateu") return `<span class="gaveta-bateu">✓</span>`;
+  if (dia.conferencia === "sobrou") return `<span class="gaveta-sobrou">+${moeda(dia.diferenca)}</span>`;
+  if (dia.conferencia === "faltou") return `<span class="gaveta-faltou">−${moeda(-dia.diferenca)}</span>`;
+  return `<span class="gaveta-nao" title="Gaveta não conferida">—</span>`;
+}
+
+function atualizarPeriodo() {
+  if (!$("painelPeriodo").open) return;
+  const tipo = document.querySelector('input[name="periodo"]:checked').value;
+  const { inicio, fim, nome } = limitesDoPeriodo(dataAtual, tipo);
+  const p = resumirPeriodo(dados, inicio, fim);
+
+  $("periodoNome").textContent = nome;
+  $("perEntradas").textContent = moeda(p.totalEntradas);
+  $("perSaidas").textContent = moeda(p.totalSaidas);
+  $("perResultado").textContent = moeda(p.resultado);
+  $("perResultado").classList.toggle("negativo", p.resultado < 0);
+  $("perDias").textContent = String(p.dias.length);
+  $("perMedia").textContent = p.media === null ? "—" : moeda(p.media);
+  $("perMedia").classList.toggle("negativo", p.media !== null && p.media < 0);
+  $("perMelhor").textContent = p.melhor ? `${dataCurta(p.melhor.data)} · ${moeda(p.melhor.resultado)}` : "—";
+
+  $("periodoVazio").hidden = p.dias.length > 0;
+  $("periodoTabela").hidden = p.dias.length === 0;
+  document.querySelector(".periodo-dica").hidden = p.dias.length === 0;
+  const maior = Math.max(1, ...p.dias.map((d) => Math.abs(d.resultado)));
+  $("periodoLinhas").innerHTML = p.dias.map((d) => {
+    const largura = Math.round((Math.abs(d.resultado) / maior) * 100);
+    const semana = DIAS_SEMANA[deISO(d.data).getDay()].slice(0, 3);
+    return `
+      <tr data-data="${d.data}" class="${d.data === dataAtual ? "atual" : ""}" tabindex="0">
+        <td>${semana} ${dataCurta(d.data)}</td>
+        <td class="col-extra">${moeda(d.entradas)}</td>
+        <td class="col-extra">${moeda(d.saidas)}</td>
+        <td class="resultado-celula">
+          <div class="barra ${d.resultado < 0 ? "negativa" : ""}" style="width:${largura}%"></div>
+          <span class="${d.resultado < 0 ? "negativo" : ""}">${moeda(d.resultado)}</span>
+        </td>
+        <td>${textoGaveta(d)}</td>
+      </tr>`;
+  }).join("");
+
+  atualizarMetaPeriodo();
+}
+
+/** "Faltam R$ X em N dias de trabalho → R$ Y por dia", a partir do dia escolhido. */
+function atualizarMetaPeriodo() {
+  const t = dados.temporada;
+  const caixa = $("periodoMeta");
+  const temDatas = t.inicio && t.fim && t.fim >= t.inicio;
+  caixa.hidden = t.meta === null || !temDatas;
+  caixa.classList.remove("alcancada");
+  if (caixa.hidden) return;
+
+  const ultimoSalvo = datasSalvas(dados).filter((d) => d <= dataAtual && d <= t.fim).pop();
+  const saldoAgora = ultimoSalvo
+    ? calcularData(dados, ultimoSalvo).resultado.saldoAcumulado
+    : t.saldoInicial.gaveta + t.saldoInicial.banco;
+  const falta = t.meta - saldoAgora;
+  const de = [somarDias(dataAtual, 1), t.inicio].sort()[1];
+  const diasRestantes = de <= t.fim ? contarDiasDeTrabalho(de, t.fim, t.folgas) : 0;
+
+  if (falta <= 0) {
+    caixa.textContent = `Meta da temporada alcançada: ${moeda(saldoAgora)} de ${moeda(t.meta)}!`;
+    caixa.classList.add("alcancada");
+  } else if (diasRestantes === 0) {
+    caixa.textContent = `A temporada terminou. Ficaram faltando ${moeda(falta)} para a meta de ${moeda(t.meta)}.`;
+  } else {
+    caixa.textContent = `Meta da temporada: faltam ${moeda(falta)} em ${diasRestantes} dias de trabalho `
+      + `→ ${moeda(Math.ceil(falta / diasRestantes))} por dia.`;
+  }
+}
+
+function ligarPeriodo() {
+  $("painelPeriodo").addEventListener("toggle", atualizarPeriodo);
+  document.querySelectorAll('input[name="periodo"]').forEach((r) => r.addEventListener("change", atualizarPeriodo));
+  const abrirDia = (ev) => {
+    const linha = ev.target.closest("tr[data-data]");
+    if (!linha) return;
+    if (ev.type === "keydown" && ev.key !== "Enter") return;
+    irPara(linha.dataset.data);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  $("periodoLinhas").addEventListener("click", abrirDia);
+  $("periodoLinhas").addEventListener("keydown", abrirDia);
 }
 
 // ---------------------------------------------------------------------------
@@ -705,6 +817,7 @@ ligarCamposDeValor();
 ligarOutrosCampos();
 ligarNavegacao();
 ligarAcoes();
+ligarPeriodo();
 preencherTemporada();
 preencherDia();
 $("painelTemporada").open = dados.temporada.meta === null && datasSalvas(dados).length === 0;

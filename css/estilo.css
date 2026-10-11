@@ -681,6 +681,87 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
 }
 .botao-texto:hover { background: var(--petroleo-50); }
 
+/* Resumo da semana e do mês */
+#cartaoPeriodo { margin-top: 16px; }
+.periodo { padding: 12px 16px 16px; display: grid; gap: 12px; }
+.periodo-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.periodo-nome { color: var(--petroleo-800); }
+.periodo-numeros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.periodo-numeros > div {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--petroleo-50);
+}
+.periodo-numeros span { font-size: 12px; color: var(--texto-suave); }
+.periodo-numeros strong { font-family: var(--fonte-numeros); font-size: 15px; white-space: nowrap; }
+.periodo-numeros .destaque-periodo { background: var(--petroleo-700); border-color: var(--petroleo-700); }
+.periodo-numeros .destaque-periodo span { color: var(--petroleo-200); }
+.periodo-numeros .destaque-periodo strong { color: #fff; }
+.periodo-numeros .negativo { color: var(--negativo); }
+.periodo-numeros .destaque-periodo .negativo { color: #ffb4ab; }
+
+.periodo-vazio, .periodo-dica { margin: 0; font-size: 13px; color: var(--texto-suave); }
+.periodo-dias { width: 100%; border-collapse: collapse; font-size: 14px; }
+.periodo-dias th {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texto-suave);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--borda);
+}
+.periodo-dias th:first-child, .periodo-dias td:first-child { text-align: left; }
+.periodo-dias td {
+  text-align: right;
+  padding: 6px;
+  border-bottom: 1px dashed var(--borda);
+  font-family: var(--fonte-numeros);
+  white-space: nowrap;
+}
+.periodo-dias td:first-child { font-family: var(--fonte); font-weight: 600; }
+.periodo-dias tbody tr { cursor: pointer; }
+.periodo-dias tbody tr:hover { background: var(--petroleo-50); }
+.periodo-dias tbody tr.atual { background: var(--petroleo-100); }
+.periodo-dias .resultado-celula { position: relative; min-width: 110px; }
+.periodo-dias .barra {
+  position: absolute;
+  right: 0;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 4px;
+  background: var(--positivo-fundo);
+  z-index: 0;
+}
+.periodo-dias .barra.negativa { background: var(--negativo-fundo); }
+.periodo-dias .resultado-celula span { position: relative; z-index: 1; }
+.periodo-dias .negativo { color: var(--negativo); }
+.gaveta-bateu { color: var(--positivo); font-weight: 700; }
+.gaveta-sobrou { color: var(--atencao); }
+.gaveta-faltou { color: var(--negativo); }
+.gaveta-nao { color: var(--texto-suave); }
+
+.periodo-meta {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--petroleo-50);
+  color: var(--petroleo-800);
+  font-size: 14px;
+}
+.periodo-meta.alcancada { background: var(--positivo-fundo); color: var(--positivo); font-weight: 700; }
+
+@media (max-width: 520px) {
+  .periodo-numeros { grid-template-columns: repeat(2, 1fr); }
+  .periodo-dias .col-extra { display: none; }
+}
+
 .acoes {
   display: flex;
   flex-wrap: wrap;
@@ -771,7 +852,7 @@ textarea:focus { outline: none; background: var(--petroleo-50); }
   /* Só o que interessa no papel */
   .botao-icone, #irParaHoje, .relogio, .botao-bateu, .cedulas, .acoes, .rodape, .limpar-campo, .limpar-texto, .somar-campo,
   .anterior-manual, .dica-anterior, .aviso-armazenamento, .aviso-backup, .erro-campo,
-  #cartaoTemporada, .linha.vazia, .texto-com-limpar.vazio,
+  #cartaoTemporada, #cartaoPeriodo, .linha.vazia, .texto-com-limpar.vazio,
   .linha-rotulo small, .alternador input:not(:checked) + span { display: none !important; }
   #cartaoAnotacoes.vazio { display: none; }
 

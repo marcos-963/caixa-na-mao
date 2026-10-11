@@ -194,6 +194,26 @@
     testar('backup: data inválida é descartada', Object.keys(sujo.dias).join(","), "2026-12-01");
     testar('nome do backup', nomeDoBackup(new Date(2026, 11, 1)), "caixa-na-mao-backup-2026-12-01.json");
 
+    // ---- Resumo de período ----
+    {
+      const d = dadosVazios();
+      d.temporada.saldoInicial = { gaveta: 10000, banco: 0 };
+      gravarDia(d, "2026-12-01", { entradas: { dinheiro: 50000 }, saidas: { materiais: { valor: 10000, pagoCom: "gaveta" } }, contado: 50000 });
+      gravarDia(d, "2026-12-02", { entradas: { pix: 30000 } });
+      gravarDia(d, "2026-12-09", { entradas: { dinheiro: 99900 } });
+      const p = resumirPeriodo(d, "2026-12-01", "2026-12-07");
+      testar('período: só os dias dentro das datas', p.dias.map((x) => x.data).join(","), "2026-12-01,2026-12-02");
+      testar('período: total de entradas', p.totalEntradas, 80000);
+      testar('período: total de saídas', p.totalSaidas, 10000);
+      testar('período: resultado', p.resultado, 70000);
+      testar('período: média por dia', p.media, 35000);
+      testar('período: melhor dia', p.melhor.data, "2026-12-01");
+      testar('período: conferência do dia', p.dias[0].conferencia, "bateu");
+      const vazio = resumirPeriodo(d, "2027-01-01", "2027-01-31");
+      testar('período vazio: média', vazio.media, null);
+      testar('período vazio: melhor dia', vazio.melhor, null);
+    }
+
     // ---- Somar no campo ----
     testar('soma: "5000 + 3000"', mascararSoma("5000 + 3000").texto, "50,00 + 30,00");
     testar('soma: centavos de "5000 + 3000"', mascararSoma("5000 + 3000").centavos, 8000);
