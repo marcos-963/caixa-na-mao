@@ -32,7 +32,9 @@
  * anteriores. Assim, corrigir um dia antigo corrige todos os seguintes.
  */
 
-const CHAVE_ARMAZENAMENTO = "caixa-na-mao-v1";
+/** Link com "?demo": app de demonstração, com dados fictícios guardados à parte. */
+const MODO_DEMO = new URLSearchParams(location.search).has("demo");
+const CHAVE_ARMAZENAMENTO = MODO_DEMO ? "caixa-na-mao-demo" : "caixa-na-mao-v1";
 const VERSAO_DADOS = 1;
 const FORMATO_DATA = /^\d{4}-\d{2}-\d{2}$/;
 
