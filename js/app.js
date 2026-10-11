@@ -548,7 +548,19 @@ function atualizarMeta(r) {
 // Início
 // ---------------------------------------------------------------------------
 
+// Relógio digital no topo
+function atualizarRelogio() {
+  const agora = new Date();
+  const dois = (n) => String(n).padStart(2, "0");
+  const relogio = $("relogio");
+  relogio.firstChild.textContent = `${dois(agora.getHours())}:${dois(agora.getMinutes())}`;
+  relogio.lastChild.textContent = `:${dois(agora.getSeconds())}`;
+  relogio.dateTime = agora.toISOString();
+}
+
 montarLinhas();
+atualizarRelogio();
+setInterval(atualizarRelogio, 1000);
 ligarCamposDeValor();
 ligarOutrosCampos();
 ligarNavegacao();
